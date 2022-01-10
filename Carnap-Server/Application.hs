@@ -13,52 +13,62 @@ module Application
     , db
     ) where
 
-import Control.Monad.Logger                 (liftLoc, runLoggingT)
-import Database.Persist.Postgresql          (createPostgresqlPool, pgConnStr, pgPoolSize, runSqlPool)
-import Database.Persist.Sqlite              (createSqlitePool)
-import Import
-import System.Clock
-import Language.Haskell.TH.Syntax           (qLocation)
-import Network.Wai (Middleware, pathInfo)
-import Network.Wai.Middleware.Autohead
-import Network.Wai.Middleware.AcceptOverride
-import Network.Wai.Middleware.Gzip
-import Network.Wai.Middleware.Cors
-import Network.Wai.Middleware.Throttle
-import Network.Wai.Middleware.MethodOverride
-import Network.Wai.Handler.Warp             (Settings, defaultSettings,
-                                             defaultShouldDisplayException,
-                                             runSettings, setHost,
-                                             setOnException, setPort, getPort)
-import Network.Wai.Middleware.RequestLogger (Destination (Logger),
-                                             IPAddrSource (..),
-                                             OutputFormat (..), destination,
-                                             mkRequestLogger, outputFormat)
-import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
-                                             toLogStr)
+import           Control.Monad.Logger                  (liftLoc, runLoggingT)
+import           Database.Persist.Postgresql           (createPostgresqlPool,
+                                                        pgConnStr, pgPoolSize)
+import           Database.Persist.Sql                  (ConnectionPool,
+                                                        getStmtConn, rawExecute,
+                                                        runSqlPoolWithHooks)
+import           Database.Persist.SqlBackend.Internal  (SqlBackend (..))
+import           Database.Persist.Sqlite               (createSqlitePool)
+import           Import
+import           Language.Haskell.TH.Syntax            (qLocation)
+import           Network.Wai                           (Middleware, pathInfo)
+import           Network.Wai.Handler.Warp              (Settings,
+                                                        defaultSettings,
+                                                        defaultShouldDisplayException,
+                                                        getPort, runSettings,
+                                                        setHost, setOnException,
+                                                        setPort)
+import           Network.Wai.Middleware.AcceptOverride
+import           Network.Wai.Middleware.Autohead
+import           Network.Wai.Middleware.Cors
+import           Network.Wai.Middleware.Gzip
+import           Network.Wai.Middleware.MethodOverride
+import           Network.Wai.Middleware.RequestLogger  (Destination (Logger),
+                                                        IPAddrSource (..),
+                                                        OutputFormat (..),
+                                                        destination,
+                                                        mkRequestLogger,
+                                                        outputFormat)
+import           Network.Wai.Middleware.Throttle
+import           System.Clock
+import           System.Log.FastLogger                 (defaultBufSize,
+                                                        newStdoutLoggerSet,
+                                                        toLogStr)
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
-import Handler.Serve
-import Handler.Common
-import Handler.Home
-import Handler.Info
-import Handler.Chapter
-import Handler.Book
-import Handler.User
-import Handler.Command
-import Handler.Register
-import Handler.Rule
-import Handler.Instructor
-import Handler.Admin
-import Handler.Assignment
-import Handler.Document
-import Handler.Review
-import Handler.API.API
-import Handler.API.Instructor.Documents
-import Handler.API.Instructor.Students
-import Handler.API.Instructor.Assignments
-import Handler.API.Instructor.Courses
+import           Handler.API.API
+import           Handler.API.Instructor.Assignments
+import           Handler.API.Instructor.Courses
+import           Handler.API.Instructor.Documents
+import           Handler.API.Instructor.Students
+import           Handler.Admin
+import           Handler.Assignment
+import           Handler.Book
+import           Handler.Chapter
+import           Handler.Command
+import           Handler.Common
+import           Handler.Document
+import           Handler.Home
+import           Handler.Info
+import           Handler.Instructor
+import           Handler.Register
+import           Handler.Review
+import           Handler.Rule
+import           Handler.Serve
+import           Handler.User
 
 
 -- This line actually creates our YesodDispatch instance. It is the second half
@@ -93,29 +103,59 @@ makeFoundation appSettings = do
         logFunc = messageLoggerSource tempFoundation appLogger
 
     --Create the database connection pool
-    pool <- flip runLoggingT logFunc $ 
-                if appSqlite appSettings 
+    pool <- flip runLoggingT logFunc $
+                if appSqlite appSettings
                     then createSqlitePool (pack (appDataRoot appSettings </> "sqlite.db")) 10
                     else createPostgresqlPool
                         (pgConnStr  $ appDatabaseConf appSettings)
                         (pgPoolSize $ appDatabaseConf appSettings)
 
     -- Perform database migration using our application's logging settings.
-    runLoggingT (runSqlPool (runMigration migrateAll) pool) logFunc
+    runLoggingT (runMigrationPool (runMigration migrateAll) pool) logFunc
 
     -- Return the foundation
     return $ mkFoundation pool
+
+-- | Runs a migration action on a pool. Exactly like 'runSqlPool', but it will
+--   disable foreign keys if running on a sqlite database per the recommendation
+--   in the <https://sqlite.org/lang_altertable.html#making_other_kinds_of_table_schema_changes
+--   relevant sqlite documentation>.
+--
+--   This is a workaround for <https://github.com/yesodweb/persistent/issues/1125>
+runMigrationPool
+    :: forall m a. (MonadUnliftIO m)
+    => ReaderT SqlBackend m a -> ConnectionPool -> m a
+runMigrationPool r pconn =
+    runSqlPoolWithHooks r pconn Nothing before after onException
+  where
+    before conn = do
+        let sqlBackend = projectBackend conn
+        let getter = getStmtConn sqlBackend
+        whenSqlite conn $ rawExecute "PRAGMA foreign_keys=OFF" []
+        liftIO $ connBegin sqlBackend getter Nothing
+    after conn = do
+        let sqlBackend = projectBackend conn
+        let getter = getStmtConn sqlBackend
+        whenSqlite conn $ rawExecute "PRAGMA foreign_keys=ON" []
+        liftIO $ connCommit sqlBackend getter
+    onException conn _ = do
+        let sqlBackend = projectBackend conn
+        let getter = getStmtConn sqlBackend
+        liftIO $ connRollback sqlBackend getter
+
+    whenSqlite conn act | connRDBMS conn == "sqlite" = runReaderT `flip` conn $ act
+    whenSqlite _ _ = pure ()
 
 -- | Convert our foundation to a WAI Application by calling @toWaiAppPlain@ and
 -- applying some additional middlewares.
 makeApplication :: App -> IO Application
 makeApplication foundation = do
     let expirationSpec = TimeSpec 5 0
-        zipsettings = if appDevel (appSettings foundation) 
+        zipsettings = if appDevel (appSettings foundation)
                         then GzipIgnore
                         else GzipPreCompressed GzipCompress
-        throttleSettings = (defaultThrottleSettings expirationSpec) 
-                                { throttleSettingsIsThrottled = \req -> 
+        throttleSettings = (defaultThrottleSettings expirationSpec)
+                                { throttleSettingsIsThrottled = \req ->
                                     case pathInfo req of
                                         "api":_ -> True
                                         _ -> False
@@ -126,12 +166,12 @@ makeApplication foundation = do
     logWare <- makeLogWare foundation
     throttler <- initThrottler throttleSettings
     appPlain <- toWaiAppPlain foundation
-    return $ logWare 
+    return $ logWare
            . throttle throttler
-           . acceptOverride 
-           . autohead 
-           . gzip (def {gzipFiles = zipsettings }) 
-           . methodOverride 
+           . acceptOverride
+           . autohead
+           . gzip (def {gzipFiles = zipsettings })
+           . methodOverride
            . simpleCors $ appPlain
 
 makeLogWare :: App -> IO Middleware

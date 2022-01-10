@@ -41,6 +41,8 @@ library
                      Handler.Document
                      Handler.Serve
                      Handler.API.API
+                     Handler.API.AesonHelper
+                     Handler.API.Instructor.Types
                      Handler.API.Instructor.Documents
                      Handler.API.Instructor.Students
                      Handler.API.Instructor.Assignments
@@ -85,11 +87,13 @@ library
                 FlexibleInstances
                 EmptyDataDecls
                 LambdaCase
+                NamedFieldPuns
                 NoMonomorphismRestriction
                 RankNTypes
                 DeriveDataTypeable
                 ViewPatterns
                 TupleSections
+                TypeApplications
                 RecordWildCards
 
     build-depends: base >=4.8.2.0 && <4.9 || >=4.9.1.0 && <5
@@ -100,28 +104,28 @@ library
                  , yesod-auth-lti13
                  , lti13
                  , yesod-static                  >=1.6 && <1.7
-                 , yesod-form                    >=1.6 && <1.7
+                 , yesod-form                    >=1.6 && <1.8
                  , yesod-markdown                >= 0.12
                  , classy-prelude                >=1.4 && <1.6
                  , classy-prelude-conduit        >=1.4 && <1.6
                  , classy-prelude-yesod          >=1.4 && <1.6
                  , bytestring                    >=0.9 && <0.11
                  , text                          >=0.11 && <2.0
-                 , persistent                    >=2.8 && <2.12
-                 , persistent-postgresql         >=2.8 && <2.12
+                 , persistent                    >=2.8 && <2.14
+                 , persistent-postgresql         >=2.8 && <2.14
                  , persistent-sqlite
-                 , persistent-template           >= 2.5        && < 2.10
+                 , esqueleto
                  , template-haskell
                  , th-utilities
                  , shakespeare                   >= 2.0        && < 2.1
                  , monad-control                 >= 0.3        && < 1.1
-                 , wai-extra                     >= 3.0        && < 3.1
+                 , wai-extra                     >= 3.0        && < 3.2
                  , yaml                          >= 0.8        && < 0.12
                  , http-conduit                  >= 2.3        && < 2.4
                  , directory                     >= 1.1        && < 1.4
                  , warp                          >= 3.0        && < 3.4
                  , data-default
-                 , aeson                         >= 0.6        && < 1.5
+                 , aeson                         >= 0.6        && < 1.6
                  , conduit                       >= 1.0        && < 2.0
                  , monad-logger                  >= 0.3        && < 0.4
                  , fast-logger                   >= 2.2        && < 3.1
@@ -151,8 +155,8 @@ library
                  , tz
                  , tzdata
                  , random
-                 , cryptonite >= 0.26 && < 0.27
-                 , base64-bytestring >= 1.0.0 && < 1.1
+                 , cryptonite >= 0.26 && < 0.30
+                 , base64-bytestring >= 1.0.0 && < 1.2
                  , clock
                  , wai-middleware-throttle >= 0.3.0.0 && < 0.4
                  , Carnap-Client

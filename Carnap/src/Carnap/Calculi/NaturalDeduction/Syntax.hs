@@ -1,27 +1,38 @@
-{-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, UndecidableInstances, FunctionalDependencies, RankNTypes, ConstraintKinds #-}
+{-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE KindSignatures         #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE TypeSynonymInstances   #-}
+{-# LANGUAGE UndecidableInstances   #-}
 module Carnap.Calculi.NaturalDeduction.Syntax where
 
-import Data.Tree
-import Data.Map (Map)
-import Data.IORef (IORef)
-import Data.List (permutations, (\\))
-import Data.Hashable
-import Data.Typeable
-import Control.Lens
-import Carnap.Core.Unification.Unification
+import           Carnap.Core.Unification.Unification
+import           Control.Lens
+import           Data.Hashable
+import           Data.IORef                                (IORef)
+import           Data.List                                 (permutations, (\\))
+import           Data.Map                                  (Map)
+import           Data.Tree
+import           Data.Typeable
 --import Carnap.Core.Unification.FirstOrder
-import Carnap.Core.Unification.ACUI
-import Carnap.Core.Data.Types
-import Carnap.Core.Data.Classes
-import Carnap.Core.Data.Optics
-import Carnap.Calculi.Util
-import Carnap.Languages.PurePropositional.Syntax
-import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.ClassicalSequent.Parser
-import Carnap.Languages.PurePropositional.Parser
-import Carnap.Languages.Util.LanguageClasses
-import Control.Monad.State
-import Text.Parsec (Parsec, ParseError)
+import           Carnap.Calculi.Util
+import           Carnap.Core.Data.Classes
+import           Carnap.Core.Data.Optics
+import           Carnap.Core.Data.Types
+import           Carnap.Core.Unification.ACUI
+import           Carnap.Languages.ClassicalSequent.Parser
+import           Carnap.Languages.ClassicalSequent.Syntax
+import           Carnap.Languages.PurePropositional.Parser
+import           Carnap.Languages.PurePropositional.Syntax
+import           Carnap.Languages.Util.LanguageClasses
+import           Control.Monad.State
+import           Text.Parsec                               (ParseError, Parsec)
 
 --------------------------------------------------------
 --1. Data For Natural Deduction
@@ -34,7 +45,7 @@ import Text.Parsec (Parsec, ParseError)
 type MultiRule r = [r]
 
 data DeductionLine r lex a where
-        AssertLine :: 
+        AssertLine ::
             { asserted :: FixLang lex a
             , assertRule :: MultiRule r
             , assertDepth :: Int
@@ -48,17 +59,17 @@ data DeductionLine r lex a where
             , dependAssertInScope:: [Int]
             , dependAssertLineNo:: Maybe Int
             } -> DeductionLine r lex a
-        ShowLine :: 
+        ShowLine ::
             { toShow :: FixLang lex a
             , showDepth :: Int
             } -> DeductionLine r lex a
-        ShowWithLine :: 
+        ShowWithLine ::
             { toShowWith :: FixLang lex a
             , showWithDepth :: Int
             , showWithRule :: MultiRule r
             , showWithDependencies :: [(Int,Int)]
             } -> DeductionLine r lex a
-        QedLine :: 
+        QedLine ::
             { closureRule :: MultiRule r
             , closureDepth :: Int
             , closureDependencies :: [(Int,Int)]
@@ -72,34 +83,34 @@ data DeductionLine r lex a where
             { separatorLineDepth :: Int
             } -> DeductionLine r lex a
 
-ruleOfLine (AssertLine _ r _ _) = Just r
+ruleOfLine (AssertLine _ r _ _)              = Just r
 ruleOfLine (DependentAssertLine _ r _ _ _ _) = Just r
-ruleOfLine (ShowWithLine _ _ r _) = Just r
-ruleOfLine (QedLine r _ _) = Just r
-ruleOfLine _ = Nothing
+ruleOfLine (ShowWithLine _ _ r _)            = Just r
+ruleOfLine (QedLine r _ _)                   = Just r
+ruleOfLine _                                 = Nothing
 
-depth (AssertLine _ _ dpth _) = dpth
+depth (AssertLine _ _ dpth _)           = dpth
 depth (DependentAssertLine _ _ _ _ _ _) = 0
-depth (ShowLine _ dpth) = dpth
-depth (ShowWithLine _ dpth _ _) = dpth
-depth (QedLine _ dpth _) = dpth
-depth (PartialLine _ _ dpth) = dpth
-depth (SeparatorLine dpth) = dpth
+depth (ShowLine _ dpth)                 = dpth
+depth (ShowWithLine _ dpth _ _)         = dpth
+depth (QedLine _ dpth _)                = dpth
+depth (PartialLine _ _ dpth)            = dpth
+depth (SeparatorLine dpth)              = dpth
 
-dependencies (AssertLine _ _ _ deps) = Just deps
+dependencies (AssertLine _ _ _ deps)              = Just deps
 dependencies (DependentAssertLine _ _ deps _ _ _) = Just deps
-dependencies _ = Nothing
+dependencies _                                    = Nothing
 
-assertion (AssertLine f _ _ _) = Just f
+assertion (AssertLine f _ _ _)              = Just f
 assertion (DependentAssertLine f _ _ _ _ _) = Just f
-assertion (ShowLine f _) = Just f
-assertion (ShowWithLine f _ _ _) = Just f
-assertion _ = Nothing
+assertion (ShowLine f _)                    = Just f
+assertion (ShowWithLine f _ _ _)            = Just f
+assertion _                                 = Nothing
 
 isAssumptionLine :: Inference r lex sem => DeductionLine r lex sem -> Bool
-isAssumptionLine (AssertLine _ r _ _) = or (map isAssumption r)
+isAssumptionLine (AssertLine _ r _ _)              = or (map isAssumption r)
 isAssumptionLine (DependentAssertLine _ r _ _ _ _) = or (map isAssumption r)
-isAssumptionLine _ = False
+isAssumptionLine _                                 = False
 
 isOnlyAssumptionLine :: Inference r lex sem => DeductionLine r lex sem -> Bool
 isOnlyAssumptionLine (AssertLine _ r _ _) = and (map isAssumption r)
@@ -107,19 +118,19 @@ isOnlyAssumptionLine (DependentAssertLine _ r _ _ _ _) = and (map isAssumption r
 isOnlyAssumptionLine _ = False
 
 isPremiseLine :: Inference r lex sem => DeductionLine r lex sem -> Bool
-isPremiseLine (AssertLine _ r _ _) = and (map isPremise r)
+isPremiseLine (AssertLine _ r _ _)              = and (map isPremise r)
 isPremiseLine (DependentAssertLine _ r _ _ _ _) = and (map isPremise r)
-isPremiseLine _ = False
+isPremiseLine _                                 = False
 
 inScope (DependentAssertLine _ _ _ _ s _) = s
-inScope _ = []
+inScope _                                 = []
 
 discharged (DependentAssertLine _ _ _ (Just d) _ _) = d
-discharged _ = []
+discharged _                                        = []
 
-justificationOf (AssertLine _ r _ _) = Just r 
+justificationOf (AssertLine _ r _ _)              = Just r
 justificationOf (DependentAssertLine _ r _ _ _ _) = Just r
-justificationOf _ = Nothing
+justificationOf _                                 = Nothing
 
 ----------------------
 --  1.1 Deductions  --
@@ -135,15 +146,15 @@ type Deduction r lex sem = [DeductionLine r lex sem]
 --indicating subproofs. They are not assumed to include every line; so for
 --example, the lines available from a given line may be regarded as
 --a deduction tree.
-data DeductionTree r lex sem = Leaf Int (DeductionLine r lex sem) 
+data DeductionTree r lex sem = Leaf Int (DeductionLine r lex sem)
                          | SubProof (Int,Int) [DeductionTree r lex sem]
                          --
 --First and last numbers of a given deduction tree
-headNum (Leaf n _) = n
+headNum (Leaf n _)         = n
 headNum (SubProof (n,_) _) = n
 
 --First and last numbers of a given deduction tree
-tailNum (Leaf n _) = n
+tailNum (Leaf n _)         = n
 tailNum (SubProof (_,n) _) = n
 
 --one step of getting the deduction tree where a certian line resides
@@ -159,14 +170,14 @@ locale k (SubProof (n,m) (l:ls)) | k < n = Nothing
 (Leaf n l) .! m = if n == m then Just l else Nothing
 sp .! m = case locale m sp of
               Just sp' -> sp' .! m
-              Nothing -> Nothing
+              Nothing  -> Nothing
 
 --getting the surrounding subproof of a line, if there is one
 subProofOf m (Leaf n l)  = Nothing
-subProofOf m sp = case locale m sp of 
+subProofOf m sp = case locale m sp of
               Just (Leaf _ _) -> Just sp
-              Just sp' -> subProofOf m sp'
-              Nothing -> Nothing
+              Just sp'        -> subProofOf m sp'
+              Nothing         -> Nothing
 
 --getting the subproof in a certain range, if there is one
 range _ _ l@(Leaf _ _) = Nothing
@@ -191,7 +202,7 @@ availableSubproof m sp@(SubProof r ls) = do loc <- locale m sp
                                                 (Leaf _ _) -> return $ SubProof r $ preproofs ++ postproofs
                                                 _ -> do recur <- availableSubproof m loc
                                                         return $ SubProof r $ preproofs ++ [recur] ++ postproofs
-                                                
+
     where clean = filter (\x -> case x of SubProof _ _ -> True; _ -> False) ls
           removeChildren (SubProof r _) = SubProof r []
           preproofs = map removeChildren . filter (\(SubProof (_,n) _) -> n < m) $ clean
@@ -205,9 +216,9 @@ availableSubproof m sp@(SubProof r ls) = do loc <- locale m sp
 --  1.3 Proofs  --
 ------------------
 
-data ProofLine r lex sem where 
-       ProofLine :: Inference r lex sem => 
-            { lineNo  :: Int 
+data ProofLine r lex sem where
+       ProofLine :: Inference r lex sem =>
+            { lineNo  :: Int
             , content :: ClassicalSequentOver lex (Succedent sem)
             , rule    :: [r] } -> ProofLine r lex sem
 
@@ -215,23 +226,29 @@ instance (Eq r, Eq (ClassicalSequentOver lex (Succedent sem))) => Eq (ProofLine 
         where (ProofLine n c r) == (ProofLine n' c' r') = n == n' && c == c' && r == r'
 
 instance (Ord r, Ord (ClassicalSequentOver lex (Succedent sem))) => Ord (ProofLine r lex sem)
-        where (ProofLine n c r) < (ProofLine n' c' r') =  n < n' 
+        where (ProofLine n c r) < (ProofLine n' c' r') =  n < n'
                                                        || (n == n' && c < c')
                                                        || (n == n' && c == c' && r < r')
 
 instance (Show (ClassicalSequentOver lex (Succedent sem)), Show r) => Hashable (ProofLine r lex sem)
-        where hashWithSalt k (ProofLine n l r) = hashWithSalt k n 
-                                                 `hashWithSalt` show l 
+        where hashWithSalt k (ProofLine n l r) = hashWithSalt k n
+                                                 `hashWithSalt` show l
                                                  `hashWithSalt` show r
 
 type ProofTree r lex sem = Tree (ProofLine r lex sem)
 
-instance Ord a => Ord (Tree a) where 
+-- FIXME: When our ghcjs is upgraded to not be an antique version (waiting on
+-- nixpkgs), you can remove this. This instance was integrated in containers
+-- 0.6.5.0, and so we can't have it here for the server side build with modern
+-- packages.
+#if !MIN_VERSION_containers(0, 6, 5)
+instance Ord a => Ord (Tree a) where
         compare (Node x ts) (Node x' ts') = case compare x x' of
                                                 EQ -> compare ts ts'
                                                 c -> c
+#endif
 
-instance Hashable a => Hashable (Tree a) where 
+instance Hashable a => Hashable (Tree a) where
         hashWithSalt k (Node x ts) = hashWithSalt k x `hashWithSalt` ts
 
 --------------------
@@ -246,7 +263,7 @@ data Feedback lex sem = Feedback { finalresult :: Maybe (ClassicalSequentOver le
 type SequentTree lex sem = Tree (Int, ClassicalSequentOver lex (Sequent sem))
 
 --Proof skeletons: trees of schematic sequences generated by a tree of
---inference rules. 
+--inference rules.
 
 -------------------
 --  1.5 Calculi  --
@@ -260,13 +277,13 @@ data LemmonVariant = StandardLemmon | GoldfarbStyle | TomassiStyle
 
 data FitchVariant = StandardFitch | BergmanMooreAndNelsonStyle
 
-type ProofMemoRef lex sem r = IORef (Map Int [Either (ProofErrorMessage lex) 
+type ProofMemoRef lex sem r = IORef (Map Int [Either (ProofErrorMessage lex)
                                                      [(ClassicalSequentOver lex (Sequent sem)
                                                      , [Equation (ClassicalSequentOver lex)]
                                                      , r)]
                                            ])
 
-data NaturalDeductionCalc r lex sem = NaturalDeductionCalc 
+data NaturalDeductionCalc r lex sem = NaturalDeductionCalc
         { ndRenderer :: RenderStyle
         , ndParseProof :: RuntimeDeductionConfig lex sem
                             -> String -> [DeductionLine r lex sem]
@@ -280,7 +297,7 @@ data NaturalDeductionCalc r lex sem = NaturalDeductionCalc
         }
 
 mkNDCalc :: NaturalDeductionCalc r lex sem
-mkNDCalc = NaturalDeductionCalc 
+mkNDCalc = NaturalDeductionCalc
     { ndRenderer = NoRender
     , ndProcessLineMemo = Nothing
     , ndNotation = id
@@ -292,10 +309,10 @@ mkNDCalc = NaturalDeductionCalc
 --2. Typeclasses for natural deduction
 --------------------------------------------------------
 
-data ProofType = ProofType 
-               { assumptionNumber :: Int 
+data ProofType = ProofType
+               { assumptionNumber :: Int
                --the number of initial lines which must be assumptions (in some proof systems, used as premises for explicit indirect rules)
-               , conclusionNumber :: Int 
+               , conclusionNumber :: Int
                --the number of final available lines that figure in the rule (in some proof systems, used as premises)
                } --any remaining premises need to be gathered explicitly
 
@@ -313,7 +330,7 @@ assumptiveProof = TypedProof (ProofType 1 1)
 
 type Restrictor r lex = Int -> r -> Maybe (Restriction lex)
 
-andFurtherRestriction f g sub = case f sub of 
+andFurtherRestriction f g sub = case f sub of
                                   Nothing -> g sub
                                   Just e  -> Just e
 
@@ -336,13 +353,13 @@ class Inference r lex sem | r -> lex sem where
         --XXX: the either here is a bit of a hack
         globalRestriction :: Either (Deduction r lex sem) (DeductionTree r lex sem) -> Restrictor r lex
         globalRestriction _ _ _ = Nothing
-        
+
         indirectInference :: r -> Maybe IndirectArity
         indirectInference = const Nothing
 
         isAssumption :: r -> Bool
         isAssumption = const False
-        
+
         isPremise :: r -> Bool
         isPremise = const False
         --TODO: template for error messages, etc.
@@ -371,18 +388,18 @@ usesAssumptions n pt assumps sub | leaves == [] = Just "This inference seems to 
 
 usesAssumption n pt assump = usesAssumptions n pt [assump]
 
-exhaustsAssumptions n pt assump sub = if all (`elem` dischargedList pt) assumpInstances 
+exhaustsAssumptions n pt assump sub = if all (`elem` dischargedList pt) assumpInstances
                                           then Nothing
                                           else Just "There's an assumption above that needs to be cited before this rule can discharge it."
     where dischargedList (Node r f) = dischargesAssumptions (head (rule r)) ++ concatMap dischargedList f
           theAssump = betaNormalizeByName $ applySub sub assump
           assumpInstances = concatMap (\(Node pl _) -> case rule pl of [r] -> introducesAssumptions r; _ -> [])
-                          . filter (\(Node pl _) -> content pl == theAssump) 
+                          . filter (\(Node pl _) -> content pl == theAssump)
                           $ toListOf leaves pt
 
 --Makes sure that all the cited assumptions have the form that we get by
 --applying the substitution generated by the inference to `assump`
-checkAssumptionForm n pt assump sub = 
+checkAssumptionForm n pt assump sub =
         case leavesLabeled n pt of
             [] -> Nothing
             (Node x _ : rest) -> case subsfrom (content x) of
@@ -394,10 +411,10 @@ checkAssumptionForm n pt assump sub =
 
           differentContent x (Node y _) = content x /= content y
 
-type SupportsND r lex sem = 
-    ( Show r 
+type SupportsND r lex sem =
+    ( Show r
     , Typeable sem
-    , ReLex lex 
+    , ReLex lex
     , Inference r lex sem
     , Schematizable (lex (FixLang lex))
     , Schematizable (lex (ClassicalSequentOver lex))

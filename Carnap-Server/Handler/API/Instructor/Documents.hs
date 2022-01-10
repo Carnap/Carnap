@@ -1,74 +1,77 @@
 module Handler.API.Instructor.Documents where
 
 import           Data.Aeson
-import           Data.HashMap.Strict as HM
+import           Handler.API.Instructor.Types (DocumentPatch (..),
+                                               DocumentPost (..))
 import           Import
-import           Util.Data           (SharingScope (..))
-import           Util.Handler
 import           System.Directory
 import           System.FilePath
+import qualified Data.HashSet as HS
+import           Util.Data                    (SharingScope (..))
+import           Util.Database                (documentsWithTags, DocumentGet(..))
+import           Util.Handler
 
 getAPIInstructorDocumentsR :: Text -> Handler Value
-getAPIInstructorDocumentsR ident = do Entity uid _ <- userFromIdent ident
-                                      docs <- runDB $ selectList [DocumentCreator ==. uid] []
-                                      returnJson docs
+getAPIInstructorDocumentsR ident = do
+    Entity uid _ <- userFromIdent ident
+    returnJson =<< runDB (documentsWithTags uid)
 
 postAPIInstructorDocumentsR :: Text -> Handler Value
-postAPIInstructorDocumentsR ident = do Entity uid _ <- userFromIdent ident
-                                       val <- requireCheckJsonBody :: Handler Value
-                                       time <- liftIO $ getCurrentTime
-                                       val' <- case val of
-                                                   Object hm ->
-                                                        let hm' = HM.insert "creator" (toJSON uid)
-                                                                . HM.insert "date" (toJSON time)
-                                                                --default to private if scope is omitted
-                                                                . HM.insertWith (\_ y -> y) "scope" (toJSON Private)
-                                                                $ hm
-                                                        in return $ Object hm'
-                                                   _ -> sendStatusJSON badRequest400 ("Improper JSON" :: Text)
-                                       case fromJSON val' :: Result Document of
-                                           Error e -> (sendStatusJSON badRequest400 e)
-                                           Success doc | badFileName (documentFilename doc) -> 
-                                               sendStatusJSON badRequest400 ("Improper filename" :: Text)
-                                           Success doc -> do
-                                               dir <- docDir ident  
-                                               liftIO $ createDirectoryIfMissing True dir
-                                               path <- docFilePath ident doc
-                                               liftIO (doesFileExist path) >>= --don't clobber and annex
-                                                   bool (return ()) (sendStatusJSON conflict409 ("A document with that name already exists." :: Text)) 
-                                               inserted <- runDB (insertUnique doc) >>=
-                                                           maybe (sendStatusJSON conflict409 ("A document with that name already exists." :: Text)) return
-                                               writeFile path " " 
-                                               render <- getUrlRender
-                                               addHeader "Location" (render $ APIInstructorDocumentR ident inserted)
-                                               sendStatusJSON created201 inserted
-    where badFileName s = not (takeFileName (unpack s) == (unpack s))
+postAPIInstructorDocumentsR ident = do
+    Entity uid _ <- userFromIdent ident
+    DocumentPost {docPostScope, docPostFilename, docPostDescription, docPostTags}
+        <- requireCheckJsonBody :: Handler DocumentPost
+    time <- liftIO getCurrentTime
+
+    when (badFileName docPostFilename)
+        $ sendStatusJSON badRequest400 ("Improper filename" :: Text)
+    let doc = Document
+            { documentFilename = docPostFilename
+            , documentCreator = uid
+            , documentDate = time
+            , documentScope = fromMaybe Private docPostScope
+            , documentDescription = docPostDescription
+            }
+
+    dir <- docDir ident
+    liftIO $ createDirectoryIfMissing True dir
+    path <- docFilePath ident doc
+    liftIO (doesFileExist path) >>= --don't clobber and annex
+        flip when (sendStatusJSON conflict409 ("A document with that name already exists." :: Text))
+    inserted <- runDB $ do
+        docId <- insertUnique doc >>=
+            maybe (sendStatusJSON conflict409 ("A document with that name already exists." :: Text)) return
+        insertMany_ (Tag docId <$> concat docPostTags)
+        return docId
+    writeFile path " "
+    render <- getUrlRender
+    addHeader "Location" (render $ APIInstructorDocumentR ident inserted)
+    sendStatusJSON created201 inserted
+
+    where badFileName s = takeFileName (unpack s) /= unpack s
 
 getAPIInstructorDocumentR :: Text -> DocumentId -> Handler Value
-getAPIInstructorDocumentR ident docid = do Entity uid _ <- userFromIdent ident
-                                           doc <- runDB (get docid) >>= maybe (sendStatusJSON notFound404 ("No such document" :: Text)) pure
-                                           checkUID doc uid
-                                           returnJson doc
-
-data DocumentPatch = DocumentPatch
-                        { patchScope       :: Maybe SharingScope
-                        , patchDescription :: Maybe (Maybe Text)
-                        }
-
-instance FromJSON DocumentPatch where
-        parseJSON = withObject "documentPatch" $ \o -> do
-            DocumentPatch <$> (o .:? "scope")
-                          <*> (o .:! "description")
-
+getAPIInstructorDocumentR ident docid = do
+    Entity uid _ <- userFromIdent ident
+     >>= maybe (sendStatusJSON notFound404 ("No such document" :: Text)) pure
+    checkUID doc uid
+    returnJson
 patchAPIInstructorDocumentR :: Text -> DocumentId -> Handler Value
-patchAPIInstructorDocumentR ident docid = do Entity uid _ <- userFromIdent ident
-                                             doc <- runDB (get docid) >>= maybe (sendStatusJSON notFound404 ("No such document" :: Text)) pure
-                                             checkUID doc uid
-                                             patch <- requireCheckJsonBody :: Handler DocumentPatch
-                                             doc' <- runDB $ updateGet docid
-                                                           $ maybeUpdate DocumentScope (patchScope patch)
-                                                          ++ maybeUpdate DocumentDescription (patchDescription patch)
-                                             returnJson doc'
+patchAPIInstructorDocumentR ident docid = do
+    Entity uid _ <- userFromIdent ident
+    doc <- runDB (get docid) >>= maybe (sendStatusJSON notFound404 ("No such document" :: Text)) pure
+    checkUID doc uid
+
+    DocumentPatch {patchScope, patchDescription, patchTags}
+        <- requireCheckJsonBody :: Handler DocumentPatch
+    doc' <- runDB $ do
+        putMany (Tag docid <$> concat patchTags)
+        updateGet docid
+              $ maybeUpdate DocumentScope patchScope
+             ++ maybeUpdate DocumentDescription patchDescription
+
+    returnJson doc'
+
     where maybeUpdate field (Just val) = [field =. val]
           maybeUpdate _     Nothing    = []
 
@@ -97,3 +100,8 @@ docFilePath ident doc = do docdir <- docDir ident
 checkUID :: MonadHandler m => Document -> Key User -> m ()
 checkUID doc uid | documentCreator doc == uid = return ()
                  | otherwise = sendStatusJSON forbidden403 ("Document not owned by this instructor" :: Text)
+
+checkUID' :: MonadHandler m => DocumentGet -> Key User -> m ()
+checkUID' doc uid | docGetCreator doc == uid = return ()
+                  | otherwise = sendStatusJSON forbidden403 ("Document not owned by this instructor" :: Text)
+

@@ -12,52 +12,29 @@ let
     overrideCabal;
 in
 newpkgs: oldpkgs: {
-  # TODO: This has actually been fixed as of 2021-01-09 but it probably hasn't
-  # got into our nixpkgs. Need to update that.
-  # downgrade to 1.8.x because yesod-auth-oauth2 has not fixed support for
-  # newer versions in any *released* version yet
-  hoauth2 = oldpkgs.callHackage "hoauth2" "1.8.9" { };
-
-  # update to fix a possible security bug: https://github.com/thoughtbot/yesod-auth-oauth2/issues/132
-  yesod-auth-oauth2 = oldpkgs.callHackageDirect {
-    pkg = "yesod-auth-oauth2";
-    ver = "0.6.1.3";
-    sha256 = "1bikn9kfw6mrsais4z1nk07aa7i7hyrcs411kbbfgc7n74k6sd5b";
-  } { };
-
   # failing tests on macOS for some reason:
   # https://github.com/ubc-carnap-team/Carnap/runs/1074093219?check_suite_focus=true
   tz = dontCheck oldpkgs.tz;
-
-  # Use the version from https://github.com/yesodweb/persistent/pull/1106
-  # using overrideSrc to maintain dependency relations and nix's fixes/overrides for these
-  persistent = overrideSrc oldpkgs.persistent { src = (persistent + "/persistent"); };
-  persistent-sqlite = overrideSrc oldpkgs.persistent-sqlite { src = (persistent + "/persistent-sqlite"); };
-  # this one we have to recreate from scratch anyway because they added a dependency
-  persistent-postgresql = dontCheck (oldpkgs.callCabal2nix "persistent-postgresql" (persistent + "/persistent-postgresql") { });
-  persistent-template = overrideSrc oldpkgs.persistent-template { src = (persistent + "/persistent-template"); };
-  persistent-qq = overrideSrc oldpkgs.persistent-qq { src = (persistent + "/persistent-qq"); };
-  persistent-test = overrideSrc oldpkgs.persistent-test { src = (persistent + "/persistent-test"); };
-  # too tight an upper version bound on persistent
-  yesod-persistent = doJailbreak oldpkgs.yesod-persistent;
-  yesod-auth = doJailbreak oldpkgs.yesod-auth;
 
   # they wrote a spec that calls out to Google. It does not work in a nix
   # builder.
   oidc-client = dontCheck oldpkgs.oidc-client;
 
-  # lti13 and yesod-auth-lti13 are not in nixpkgs yet
+  # lti13 and yesod-auth-lti13 are not in all-hashes yet, 99% of the time, so
+  # just manually pull them...
+  #
+  # Development overrides:
   # lti13 = oldpkgs.callCabal2nix "lti13" ../lti13/lti13 { };
   # yesod-auth-lti13 = oldpkgs.callCabal2nix "yesod-auth-lti13" ../lti13/yesod-auth-lti13 { };
   lti13 = oldpkgs.callHackageDirect {
     pkg = "lti13";
-    ver = "0.2.0.2";
-    sha256 = "014pmhl28z242pmmkn63sh7ijdjlh2f7fbq8l5bc0q6llcd6if7y";
+    ver = "0.2.0.3";
+    sha256 = "0hwsrag4skck992hnzmj5n5iclbbrbwdwa5rxsrks8ins7jgrg1f";
   } { };
   yesod-auth-lti13 = oldpkgs.callHackageDirect {
     pkg = "yesod-auth-lti13";
-    ver = "0.2.0.2";
-    sha256 = "0q2vy7zdv5sm09wh2cqslgz0yh8l4h2gd7w1024i2mgblxa8v4xw";
+    ver = "0.2.0.3";
+    sha256 = "0mmhznyzjaqmbcgvcznab2sx5ghaxv66cxq07b8yimg61yfadbgb";
   } { };
 
   # dontCheck: https://github.com/gleachkr/Carnap/issues/123

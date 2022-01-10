@@ -142,23 +142,22 @@
                                 <th> Tags
                                 <th> Actions
                             <tbody>
-                                $forall Entity k a <- documents
-                                    <tr id="document-#{documentFilename a}">
+                                $forall d <- documents
+                                    <tr id="document-#{docGetFilename d}">
                                         <td>
-                                            <a href="@{DocumentR ident (documentFilename a)}">
-                                                #{documentFilename a}
-                                        <td> #{formatTime defaultTimeLocale "%F" $ documentDate a}
-                                        <td> #{show $ documentScope a}
+                                            <a href="@{DocumentR ident (docGetFilename d)}">
+                                                #{docGetFilename d}
+                                        <td> #{formatTime defaultTimeLocale "%F" $ docGetDate d}
+                                        <td> #{show $ docGetScope d}
                                         <td>
-                                            $maybe tags <- tagsOf k
-                                                $forall tag <- tags
-                                                    <a.badge.badge-primary href="@{DocumentsByTagR tag}">#{tag}
+                                            $forall tag <- docGetTags d
+                                                <a.badge.badge-primary href="@{DocumentsByTagR tag}">#{tag}
                                         <td>
-                                            <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanently delete this document" onclick="tryDeleteDocument('#{jsonSerialize $ DeleteDocument (documentFilename a)}')">
+                                            <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanently delete this document" onclick="tryDeleteDocument('#{jsonSerialize $ DeleteDocument (docGetFilename d)}')">
                                                 <i.fa.fa-trash-o>
-                                            <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}','#{maybe "" sanitizeForJS (unpack <$> documentDescription a)}','#{documentFilename a}', '#{tagString k}')">
+                                            <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show $ docGetId d}','#{maybe "" sanitizeForJS (unpack <$> docGetDescription d)}','#{docGetFilename d}', '#{tagString d}')">
                                                 <i.fa.fa-cog>
-                                            <button.btn.btn-sm.btn-secondary alt="download" title="download this document" type="button" onclick="window.open('@{DocumentDownloadR ident (documentFilename a)}')">
+                                            <button.btn.btn-sm.btn-secondary alt="download" title="download this document" type="button" onclick="window.open('@{DocumentDownloadR ident (docGetFilename d)}')">
                                                 <i.fa.fa-cloud-download>
                     <hr>
                     <dl.row>
