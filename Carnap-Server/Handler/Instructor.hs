@@ -646,7 +646,8 @@ uploadAssignmentForm classes docs extra = do
           assignableDocs = filter isAssignable docs
           isAssignable thedoc = let extension =  takeExtension . unpack . documentFilename . entityVal $ thedoc
                                     in not (extension `elem` [".css",".js",".yaml",".png",".jpg",".jpeg",".gif",".svg",".pdf"])
-          docnames = map (\thedoc -> (documentFilename . entityVal $ thedoc, thedoc)) assignableDocs
+          docnames = sortBy (\(x,_) (y,_) -> compare (toLower x) (toLower y)) 
+                   $ map (\thedoc -> (documentFilename . entityVal $ thedoc, thedoc)) assignableDocs
 
 updateAssignmentForm
     :: Markup
