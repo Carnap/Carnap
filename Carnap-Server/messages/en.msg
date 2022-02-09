@@ -13,6 +13,7 @@ HomepageText8: page. If you're interested in the project, and would like to use 
 HomepageText9: get in touch!
 
 # templates/infopage.hamlet
+InfopageAboutCarnap: About Carnap
 InfopageWhatIs: What is Carnap?
 InfopageWhatFor: What's Carnap for?
 InfopageHowToUse: How can I use Carnap?
@@ -52,3 +53,8 @@ InfopageDemosText24: Carnap also includes a JSON API, making it possible to crea
 InfopageDemosText25: using P.D. Magnus' 
 InfopageDemosText26: system SL.
 InfopageDemosText27: example 17
+
+# templates/auth-layout.hamlet
+AuthLayoutAbout: About
+AuthLayoutBook: Book
+AuthLayoutMessage: Message
