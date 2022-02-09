@@ -29,10 +29,10 @@ jobs:
         os: ${{ fromJSON(needs.matrix-prep.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v12
+      - uses: cachix/install-nix-action@v15
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      - uses: cachix/cachix-action@v8
+      - uses: cachix/cachix-action@v10
         with:
           name: carnap
           # skip pushing to cachix if this is NOT a push to a branch (i.e. it is a PR)
@@ -58,11 +58,11 @@ jobs:
       - run: 'mkdir -p "${XDG_RUNTIME_DIR}"'
       - run: "echo url: docker://$(echo ${IMG_REF} | envsubst | tr 'A-Z' 'a-z')"
       - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v12
+      - uses: cachix/install-nix-action@v15
         with:
           nix_path: nixpkgs=channel:nixos-unstable
       - run: nix-shell -p skopeo --run "skopeo --insecure-policy login docker.pkg.github.com -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}"
-      - uses: cachix/cachix-action@v8
+      - uses: cachix/cachix-action@v10
         with:
           name: carnap
           # the docker image artifacts are really big and not terribly useful for deployment
