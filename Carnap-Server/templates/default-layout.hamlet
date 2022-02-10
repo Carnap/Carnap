@@ -5,13 +5,16 @@
                 <li>
                     <a href=@{HomeR}>Carnap
                 <li>
-                    <a href=@{InfoR}>About
+                    <a href=@{InfoR}>
+                        _{MsgLayoutAbout}
                 <li>
                     $maybe doc <- entityVal <$> mdoc
                         $maybe course <- entityVal <$> mcourse
-                            <a href=@{CourseAssignmentR (courseTitle course) (documentFilename doc)}>Book
+                            <a href=@{CourseAssignmentR (courseTitle course) (documentFilename doc)}>
+                                _{MsgLayoutBook}
                         $nothing
-                            <a href=@{BookR}>Book
+                            <a href=@{BookR}>
+                                _{MsgLayoutBook}
                     $nothing
                         <a href=@{BookR}>Book
                 $maybe (Entity _ user) <- authmaybe
@@ -22,26 +25,31 @@
                                 <a href=@{UserDispatchR}>#{userIdent user}
                             <ul>
                                 <li>
-                                    <a href=@{UserR (userIdent user)}> User Home
+                                    <a href=@{UserR (userIdent user)}> 
+                                        _{MsgLayoutUserHome}
                                 $if isInstructor
                                     <li>
-                                        <a href=@{InstructorR (userIdent user)}> Instructor Home
+                                        <a href=@{InstructorR (userIdent user)}> 
+                                            _{MsgLayoutInstructorHome}
                                     <li>
-                                        <a href=@{DocumentsR}> Shared Documents
+                                        <a href=@{DocumentsR}> 
+                                            _{MsgLayoutSharedDocuments}
                                     <li>
-                                        <a href="@{ServeR "doc" ["index.md"]}"> Documentation
+                                        <a href="@{ServeR "doc" ["index.md"]}"> 
+                                            _{MsgLayoutSharedDocumentation}
                                 <li>
-                                    <a href=@{AuthR LogoutR}> Logout
+                                    <a href=@{AuthR LogoutR}> 
+                                        _{MsgLayoutLogout}
                 $nothing
                     <li>
                         <a href=@{AuthR LoginR}>
-                            Login
+                            _{MsgLayoutLogout}
 
 <div id="main" role="main">
     <div.container>
         $maybe msg <- mmsg
           <div #message>
-              <strong>Message:
+              <strong>_{MsgLayoutMessage}:
               #{msg}
 
     ^{widget}

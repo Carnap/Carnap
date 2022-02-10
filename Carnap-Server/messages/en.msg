@@ -54,7 +54,13 @@ InfopageDemosText25: using P.D. Magnus'
 InfopageDemosText26: system SL.
 InfopageDemosText27: example 17
 
-# templates/auth-layout.hamlet
-AuthLayoutAbout: About
-AuthLayoutBook: Book
-AuthLayoutMessage: Message
+# templates/auth-layout.hamlet, templates/default-layout.hamlet
+LayoutAbout: About
+LayoutBook: Book
+LayoutMessage: Message
+LayoutUserHome: User Home
+LayoutInstructorHome: Instructor Home
+LayoutSharedDocuments: Shared Documents
+LayoutSharedDocumentation: Documentation
+LayoutLogout: Logout
+LayoutLogin: Login

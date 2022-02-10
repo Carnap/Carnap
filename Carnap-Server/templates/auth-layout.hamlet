@@ -7,15 +7,15 @@
                         Carnap
                 <li>
                     <a href=@{InfoR}>
-                        _{MsgAuthLayoutAbout}
+                        _{MsgLayoutAbout}
                 <li>
                     <a href=@{BookR}>
-                        _{MsgAuthLayoutBook}
+                        _{MsgLayoutBook}
 
 <div id="main" role="main">
     $maybe msg <- mmsg
       <div .container>
-          <strong>_{MsgAuthLayoutMessage}:
+          <strong>_{MsgLayoutMessage}:
           <div #message>#{msg}
 
 <div.container>
