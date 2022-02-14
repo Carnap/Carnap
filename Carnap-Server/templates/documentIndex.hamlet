@@ -2,11 +2,11 @@
     <h1>#{title}
     <div.card>
         <div.card-block>
-            <p.card-text> Filter by Tag: 
+            <p.card-text>_{MsgDocumentIndexFilterByTag}:
                 $forall tag <- allTags
                     <a.badge.badge-primary href="@{DocumentsByTagR tag}">#{tag}
-    <h2>Publicly Shared
+    <h2>_{MsgDocumentIndexPubliclyShared}
     ^{documentCards publicDocuments pubidents pubmd tagMap}
     $maybe privdocs <- privateDocuments
-        <h2>Instructors Only
+        <h2>_{MsgDocumentIndexInstructorsOnly}
         ^{documentCards privdocs prividents privmd tagMap}

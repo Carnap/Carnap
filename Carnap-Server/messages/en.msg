@@ -64,3 +64,9 @@ LayoutSharedDocuments: Shared Documents
 LayoutSharedDocumentation: Documentation
 LayoutLogout: Logout
 LayoutLogin: Login
+
+# templates/documentIndex.hamlet
+
+DocumentIndexFilterByTag: Filter by Tag
+DocumentIndexPubliclyShared: Publicly Shared
+DocumentIndexInstructorsOnly: Instructors Only
