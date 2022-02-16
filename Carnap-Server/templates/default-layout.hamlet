@@ -16,7 +16,7 @@
                             <a href=@{BookR}>
                                 _{MsgLayoutBook}
                     $nothing
-                        <a href=@{BookR}>Book
+                        <a href=@{BookR}>_{MsgLayoutBook}
                 $maybe (Entity _ user) <- authmaybe
                     <li.dropdown>
                             $maybe Entity _ userdata <- mud
@@ -25,25 +25,25 @@
                                 <a href=@{UserDispatchR}>#{userIdent user}
                             <ul>
                                 <li>
-                                    <a href=@{UserR (userIdent user)}> 
+                                    <a href=@{UserR (userIdent user)}>
                                         _{MsgLayoutUserHome}
                                 $if isInstructor
                                     <li>
-                                        <a href=@{InstructorR (userIdent user)}> 
+                                        <a href=@{InstructorR (userIdent user)}>
                                             _{MsgLayoutInstructorHome}
                                     <li>
-                                        <a href=@{DocumentsR}> 
+                                        <a href=@{DocumentsR}>
                                             _{MsgLayoutSharedDocuments}
                                     <li>
-                                        <a href="@{ServeR "doc" ["index.md"]}"> 
+                                        <a href="@{ServeR "doc" ["index.md"]}">
                                             _{MsgLayoutSharedDocumentation}
                                 <li>
-                                    <a href=@{AuthR LogoutR}> 
+                                    <a href=@{AuthR LogoutR}>
                                         _{MsgLayoutLogout}
                 $nothing
                     <li>
                         <a href=@{AuthR LoginR}>
-                            _{MsgLayoutLogout}
+                            _{MsgLayoutLogin}
 
 <div id="main" role="main">
     <div.container>
