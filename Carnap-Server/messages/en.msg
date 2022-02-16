@@ -70,3 +70,7 @@ LayoutLogin: Login
 DocumentIndexFilterByTag: Filter by Tag
 DocumentIndexPubliclyShared: Publicly Shared
 DocumentIndexInstructorsOnly: Instructors Only
+
+# templates/passwordEntry.hamlet
+
+PasswordEntryRequest: Please enter the access key for this assignment
