@@ -1,8 +1,8 @@
 <div#carnap-info-head>
     <div.container>
-        <h1> Looks Like You Need to Register
+        <h1>_{MsgRegisterNeedTo}
 
-        Please enter the following information:
+        _{MsgRegisterPleaseEnter}
         <hr>
         <div>
             <form method=post action=@{theaction} enctype=#{enctype}>

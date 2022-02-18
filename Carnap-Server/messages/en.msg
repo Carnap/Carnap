@@ -74,3 +74,8 @@ DocumentIndexInstructorsOnly: Instructors Only
 # templates/passwordEntry.hamlet
 
 PasswordEntryRequest: Please enter the access key for this assignment
+
+# templates/register.hamlet
+
+RegisterNeedTo: Looks Like You Need to Register
+RegisterPleaseEnter: Please enter the following information:
