@@ -79,3 +79,9 @@ PasswordEntryRequest: Please enter the access key for this assignment
 
 RegisterNeedTo: Looks Like You Need to Register
 RegisterPleaseEnter: Please enter the following information:
+
+# templates/review.hamlet
+
+ReviewNothingToReview: Nothing to review!
+ReviewAllProblems: All Problems
+ReviewNeedingReview: Needing Review

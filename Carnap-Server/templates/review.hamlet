@@ -1,14 +1,14 @@
 <div.container>
    <article>
        $if null problems
-            <p> Nothing to review!
+            <p> _{MsgReviewNothingToReview}
        $else
             <div.card.mb-3 style="padding:20px">
                 <div.row>
                     <div.col-sm-8>
                         <div class="btn-group" role="group">
-                          <button type="button" id="viewAll" class="btn btn-primary">All Problems
-                          <button type="button" id="viewUngraded" class="btn btn-outline-primary">Needing Review
+                          <button type="button" id="viewAll" class="btn btn-primary">_{MsgReviewAllProblems}
+                          <button type="button" id="viewUngraded" class="btn btn-outline-primary">_{MsgReviewNeedingReview}
                     <div.col-sm-4>
                       ^{selectUser uidAndData}
             $forall p <- problems
