@@ -20,7 +20,7 @@ import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.Rules (premConstraint,axiom)
 
-data IchikawaJenkinsQL = IJSL IchikawaJenkinsSL | QL MagnusQL
+data IchikawaJenkinsQL = IJSL IchikawaJenkinsSL | QL MagnusQLPlus
         deriving Eq
 
 instance Show IchikawaJenkinsQL where
@@ -54,15 +54,16 @@ parseIchikawaJenkinsQL rtc = try quantRule <|> liftProp
     where liftProp = do r <- parseIchikawaJenkinsSL (defaultRuntimeDeductionConfig)
                         return (map IJSL r)
           
-          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E","PR"])
+          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I", "=E", "QN", "PR"])
                          case r of 
-                            r | r `elem` ["∀I","AI"] -> returnQL [UI]
-                              | r `elem` ["∀E","AE"] -> returnQL [UE]
-                              | r `elem` ["∃I","EI"] -> returnQL [EI]
-                              | r `elem` ["∃E","EE"] -> returnQL [EE1, EE2]
-                              | r == "PR" -> returnQL [Pr (problemPremises rtc)]
-                              | r == "=I" -> returnQL [IDI]
-                              | r == "=E" -> returnQL [IDE1,IDE2]
+                            r | r `elem` ["∀I","AI"] -> returnQL [MagnusQL UI]
+                              | r `elem` ["∀E","AE"] -> returnQL [MagnusQL UE]
+                              | r `elem` ["∃I","EI"] -> returnQL [MagnusQL EI]
+                              | r `elem` ["∃E","EE"] -> returnQL [MagnusQL EE1, MagnusQL EE2]
+                              | r == "PR" -> returnQL [MagnusQL $ Pr (problemPremises rtc)]
+                              | r == "=I" -> returnQL [MagnusQL IDI]
+                              | r == "=E" -> returnQL [MagnusQL IDE1, MagnusQL IDE2]
+                              | r == "QN" -> returnQL [QN1, QN2, QN3, QN4]
 
           returnQL = return . map QL
 
