@@ -382,7 +382,6 @@ function deleteProblemSet (json, course) {
         data: json,
         success: function(data) {
             const selector = "#problem-set-" + $.escapeSelector(course) + "-" + pn.toString()
-            console.log(selector)
             var el = $(selector);
             el.remove();
             window.alert("Deleted problem set " + pn.toString());
