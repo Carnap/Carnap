@@ -147,8 +147,8 @@ deleteInstructorR ident = do
                if courseTextBook course == Just aid then update cid [CourseTextBook =. Nothing] else return ()
                deleteCascade aid
            returnJson ("Assignment deleted" :: Text)
-      DeleteProblems coursename setnum -> do
-           Entity cid theclass <- runDB (getBy $ UniqueCourse coursename) >>= maybe (sendStatusJSON notFound404 ("Couldn't get course" :: Text)) pure
+      DeleteProblems cid setnum -> do
+           theclass <- runDB (get cid) >>= maybe (sendStatusJSON notFound404 ("Couldn't get course" :: Text)) pure
            checkCourseOwnership ident cid
            runDB $ case readAssignmentTable <$> courseTextbookProblems theclass of
                Just assign -> update cid [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.delete setnum assign)]
@@ -458,7 +458,7 @@ getInstructorR ident = do
 ---------------------
 
 data InstructorDelete = DeleteAssignment AssignmentMetadataId
-                      | DeleteProblems Text Int
+                      | DeleteProblems CourseId Int
                       | DeleteCourse Text
                       | DeleteDocument Text
                       | DropStudent UserId

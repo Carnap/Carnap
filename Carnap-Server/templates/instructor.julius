@@ -371,7 +371,7 @@ function deleteCourse (json,cn) {
 };
 
 
-function deleteProblemSet (json) {
+function deleteProblemSet (json, course) {
     var cnts = JSON.parse(json).contents;
     var pn = cnts[1]
     var course = cnts[0]
@@ -381,7 +381,9 @@ function deleteProblemSet (json) {
         contentType: "application/json",
         data: json,
         success: function(data) {
-            var el = $("#problem-set-" + $.escapeSelector(course) + "-" + pn.toString());
+            const selector = "#problem-set-" + $.escapeSelector(course) + "-" + pn.toString()
+            console.log(selector)
+            var el = $(selector);
             el.remove();
             window.alert("Deleted problem set " + pn.toString());
         },
