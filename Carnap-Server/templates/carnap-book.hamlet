@@ -1,36 +1,36 @@
 <div.container>
     <h1.display-3> The Carnap Book
-    <h2> Table of Contents:
-    <h4> Chapters:
+    <h2> _{MsgCarnapBookTableOfContents}
+    <h4> _{MsgCarnapBookChapters}
     <ol>
         $forall (mt, n) <- ccount
             <li>
                 $maybe title <- mt
                     <a href="@{BookR}/#{show n}">
-                        Chapter #{show n}: #{title}
+                        _{MsgCarnapBookChapter} #{show n}: #{title}
                 $nothing
                     <a href="@{BookR}/#{show n}">
-                        Chapter #{show n}
+                        _{MsgCarnapBookChapter} #{show n}
     <h4> Appendicies:
     <ol>
         $forall (mt, n, m) <- acount
             <li>
                 $maybe title <- mt
                     <a href="@{BookR}/#{show m}">
-                        Appendix: #{title}
+                        _{MsgCarnapBookAppendix} #{title}
                 $nothing
                     <a href="@{BookR}/#{show m}">
-                        Appendix #{show n}
-    <h4> Special Sections
+                        _{MsgCarnapBookAppendix} #{show n}
+    <h4> _{MsgCarnapBookSpecialSections}
     <ol>
         <li>
             <a href="@{RuleR}">
-                Index of Rules
+                _{MsgCarnapBookIndexOfRules}
     <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">
         <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
     <a style="display:none" xmlns:cc="http://creativecommons.org/ns#" href="carnap.io/book" property="cc:attributionName" rel="cc:attributionURL">
         Graham Leach-Krouse
     <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">The Carnap Book
-    is licensed under a #
+    _{MsgCarnapBookLicense} #
     <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">
         Creative Commons Attribution 4.0 International License</a>.

@@ -85,3 +85,13 @@ RegisterPleaseEnter: Please enter the following information:
 ReviewNothingToReview: Nothing to review!
 ReviewAllProblems: All Problems
 ReviewNeedingReview: Needing Review
+
+# templates/carnap-book.hamlet
+
+CarnapBookTableOfContents: Table of Contents:
+CarnapBookChapters: Chapters:
+CarnapBookChapter: Chapter
+CarnapBookAppendix: Appendix
+CarnapBookSpecialSections: Special Sections:
+CarnapBookIndexOfRules: Index of Rules
+CarnapBookLicense: is licensed under a
