@@ -2,6 +2,7 @@
   ghcVer ? "ghc884",
   profiling ? false,
   hls ? false,
+  inNixShell ? false,
 }:
 let
   sources = import ./nix/sources.nix;
