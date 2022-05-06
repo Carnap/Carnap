@@ -1,7 +1,7 @@
 # templates/homepage.hamlet
 HomepageWelcome: Carnap.io sitesine hoş geldiniz!
-HomepageSubtitle: A formal logic framework for Haskell
-HomepageHeader: Background
+HomepageSubtitle: Haskell için formel mantık çerçevesi
+HomepageHeader: Arkaplan
 HomepageText1: Carnap is a free and open software framework written in
 HomepageText2: for teaching and studying formal logic. Carnap powers logic courses at
 HomepageText3: dozens of colleges and universities
@@ -13,14 +13,14 @@ HomepageText8: page. If you're interested in the project, and would like to use 
 HomepageText9: get in touch!
 
 # templates/infopage.hamlet
-InfopageAboutCarnap: About Carnap
-InfopageWhatIs: What is Carnap?
-InfopageWhatFor: What's Carnap for?
-InfopageHowToUse: How can I use Carnap?
-InfopageWhyName: Why “Carnap”?
-InfopageWhoUses: Who uses Carnap?
-InfopageHowWorks: How does Carnap Work?
-InfopageHowHelp: How can I get involved?
+InfopageAboutCarnap: Carnap Hakkında
+InfopageWhatIs: Carnap Nedir?
+InfopageWhatFor: Carnap Ne İşe Yarar?
+InfopageHowToUse: Carnap'ı Nasıl Kullanabilirim?
+InfopageWhyName: Neden “Carnap”?
+InfopageWhoUses: Carnap'ı Kim Kullanır?
+InfopageHowWorks: Carnap Nasıl Çalışır?
+InfopageHowHelp: Nasıl Dahil Olabilirim?
 InfopageCarnapQuote1: “The acceptance or rejection of abstract linguistic forms, just as the acceptance or rejection of any other linguistic forms in any branch of science, will finally be decided by their efficiency as instruments, the ratio of the results achieved to the amount and complexity of the efforts required. To decree dogmatic prohibitions of certain linguistic forms instead of testing them by their success or failure in practical use, is worse than futile; it is positively harmful because it may obstruct scientific progress.
 InfopageCarnapQuote2: Let us grant to those who work in any special field of investigation the freedom to use any form of expression which seems useful to them; the work in the field will sooner or later lead to the elimination of those forms which have no useful function. Let us be cautious in making assertions and critical in examining them, but tolerant in permitting linguistic forms.”
 InfopageWhatIsText: Carnap is a free and open-source Haskell framework for creating and exploring formal languages, logics, and semantics. It lets you quickly and straightforwardly define languages, construct logics for those languages, and stipulate their semantics. Carnap then uses your specifications to figure out how to check proofs in a variety of formal systems using your logic, how to find the meanings of compound expressions, and a whole lot more.
