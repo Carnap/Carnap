@@ -25,7 +25,7 @@ InfopageCarnapQuote1: “The acceptance or rejection of abstract linguistic form
 InfopageCarnapQuote2: Let us grant to those who work in any special field of investigation the freedom to use any form of expression which seems useful to them; the work in the field will sooner or later lead to the elimination of those forms which have no useful function. Let us be cautious in making assertions and critical in examining them, but tolerant in permitting linguistic forms.”
 InfopageWhatIsText: Carnap is a free and open-source Haskell framework for creating and exploring formal languages, logics, and semantics. It lets you quickly and straightforwardly define languages, construct logics for those languages, and stipulate their semantics. Carnap then uses your specifications to figure out how to check proofs in a variety of formal systems using your logic, how to find the meanings of compound expressions, and a whole lot more.
 InfopageDemos: Demos
-InfopageDemosHere: Here are some quick examples of what Carnap can do.
+InfopageDemosHere: Carnap ile yapabileceklerinize birkaç küçük örnek:
 InfopageDemosText1: This is a proofbox with a Kalish and Montague System for Propositional Logic. You can directly manipulate the proof by typing in the proofbox, and see the effects of your changes by mousing over the line-decorations on the right hand side. 
 InfopageDemosText2: This is a rendering proofbox with a Kalish and Montague System for Propositional Logic, which also visually displays the structure of the proof being developed.
 InfopageDemosText3: This is a rendering proofbox with Hardegree's variation on a Montague system.
