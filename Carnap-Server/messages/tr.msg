@@ -1,5 +1,5 @@
 # templates/homepage.hamlet
-HomepageWelcome: Welcome to Carnap.io
+HomepageWelcome: Carnap.io sitesine hoş geldiniz!
 HomepageSubtitle: A formal logic framework for Haskell
 HomepageHeader: Background
 HomepageText1: Carnap is a free and open software framework written in
