@@ -55,43 +55,43 @@ InfopageDemosText26: system SL.
 InfopageDemosText27: example 17
 
 # templates/auth-layout.hamlet, templates/default-layout.hamlet
-LayoutAbout: About
-LayoutBook: Book
-LayoutMessage: Message
-LayoutUserHome: User Home
-LayoutInstructorHome: Instructor Home
-LayoutSharedDocuments: Shared Documents
-LayoutSharedDocumentation: Documentation
-LayoutLogout: Logout
-LayoutLogin: Login
+LayoutAbout: Hakkında
+LayoutBook: Kitap
+LayoutMessage: İleti
+LayoutUserHome: Kullanıcı Ana Sayfa
+LayoutInstructorHome: Öğretici Ana Sayfa
+LayoutSharedDocuments: Paylaşılmış Belgeler
+LayoutSharedDocumentation: Belgeleme
+LayoutLogout: Çıkış
+LayoutLogin: Giriş
 
 # templates/documentIndex.hamlet
 
-DocumentIndexFilterByTag: Filter by Tag
-DocumentIndexPubliclyShared: Publicly Shared
-DocumentIndexInstructorsOnly: Instructors Only
+DocumentIndexFilterByTag: Etikete Göre Süz
+DocumentIndexPubliclyShared: Herkesle Paylaşılmış
+DocumentIndexInstructorsOnly: Yalnızca Öğreticiler
 
 # templates/passwordEntry.hamlet
 
-PasswordEntryRequest: Please enter the access key for this assignment
+PasswordEntryRequest: Bu ödev için lütfen erişim anahtarını giriniz
 
 # templates/register.hamlet
 
-RegisterNeedTo: Looks Like You Need to Register
-RegisterPleaseEnter: Please enter the following information:
+RegisterNeedTo: Görünüşe Göre Kayıt Olmanız Gerekiyor
+RegisterPleaseEnter: Lütfen aşağıdaki bilgileri giriniz:
 
 # templates/review.hamlet
 
-ReviewNothingToReview: Nothing to review!
-ReviewAllProblems: All Problems
-ReviewNeedingReview: Needing Review
+ReviewNothingToReview: İncelenecek hiçbir şey yok!
+ReviewAllProblems: Tüm Problemler
+ReviewNeedingReview: İnceleme Gerekiyor
 
 # templates/carnap-book.hamlet
 
-CarnapBookTableOfContents: Table of Contents:
-CarnapBookChapters: Chapters:
-CarnapBookChapter: Chapter
-CarnapBookAppendix: Appendix
-CarnapBookSpecialSections: Special Sections:
-CarnapBookIndexOfRules: Index of Rules
+CarnapBookTableOfContents: İçindekiler::
+CarnapBookChapters: Bölümler:
+CarnapBookChapter: Bölüm
+CarnapBookAppendix: Ek
+CarnapBookSpecialSections: Özel Kesimler:
+CarnapBookIndexOfRules: Kurallar Dizini
 CarnapBookLicense: is licensed under a
