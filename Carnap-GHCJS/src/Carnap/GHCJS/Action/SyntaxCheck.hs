@@ -154,6 +154,7 @@ activateChecker w (Just (i,o,opts)) =
                          match <- newListener $ tryMatch tree ref w sf opts
                          (Just w') <- getDefaultView w
                          doOnce i keyUp False $ liftIO $ btStatus Edited
+                         setAttribute i "enterKeyHint" "go"
                          addListener i keyUp match False                  
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "syntax check was missing an option"
