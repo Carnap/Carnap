@@ -25,7 +25,7 @@
         <p> _{MsgInfopageCarnapQuote1}
         <p> _{MsgInfopageCarnapQuote2}
         <footer.blockquote-footer>Rudolf Carnap,
-            <cite title="Empiricism Semantics and Ontology"> Empiricism Semantics and Ontology
+            <cite title="Empiricism Semantics and Ontology"> _{MsgInfopageCarnapQuoteSource}
 
     <section#what>
         <p> _{MsgInfopageWhatIsText}
@@ -43,72 +43,71 @@
                     <p>_{MsgInfopageDemosText3}
                     ^{proofcheck 3 "hardegreeSL" "render resize" "P/\\Q->R:|-: P->(Q->R)" adjunctionTheorem}
                 <div.demo>
-                    <p>_{MsgInfopageDemosText4} #
-                       <i>The Logic Book
-                       _{MsgInfopageDemosText5}
+                    <p>_{MsgInfopageDemosTextPrefix4} #
+                       <i>_{MsgInfopageDemosTextItalics4}
+                       _{MsgInfopageDemosTextSuffix4}
                     ^{proofcheck 4 "LogicBookSD" "render resize" ":|-:(((P->Q)->P)->P)" pierceTheorem}
                 <div.demo>
-                    <p>_{MsgInfopageDemosText6}
+                    <p>_{MsgInfopageDemosText5}
                     ^{proofcheck 5 "firstOrder" "render resize" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheorem}
                 <div.demo>
-                    <p>_{MsgInfopageDemosText7} #
-                       <em>Deductive Logic
-                       .
+                    <p>_{MsgInfopageDemosTextPrefix6} #
+                       <em>_{MsgInfopageDemosTextItalics6}
+                       _{MsgInfopageDemosTextPrefix6}.
                     ^{proofcheck 6 "goldfarbNDPlus" "render resize" "ExAy(Kxy -> Fxy), AxEyKxy :|-: ExEyFxy" lemmonTheorem}
                 <div.demo>
+                    <p>_{MsgInfopageDemosText7}
                     <p>_{MsgInfopageDemosText8}
-                    <p>_{MsgInfopageDemosText9}
                     ^{proofcheck 7 "firstOrder" "render resize" "AxAyAz(F(x,g(y,z)) ↔ h(x,y) = h(x,z)) :|-: AwAxAyAz(F(w,g(x,y))^F(w,g(x,z))→F(w,g(y,z)))" bisectorTheorem}
                 <div.demo>
-                    <p>_{MsgInfopageDemosText10} #
-                       <a href="https://www.fecundity.com/logic/">Forall x#
-                       _{MsgInfopageDemosText11} #
-                       <a href="https://github.com/rzach/forallx-yyc">Calgary remix
-                       \ _{MsgInfopageDemosText12}
-                       <i>Forall x.
-                       _{MsgInfopageDemosText13}
-                       <i>Forall x.
+                    <p>_{MsgInfopageDemosTextPrefix9} #
+                       <a href="https://www.fecundity.com/logic/">_{MsgInfopageDemosTextLinkA9}
+                       \_{MsgInfopageDemosTextInfixA9} #
+                       <a href="https://github.com/rzach/forallx-yyc">_{MsgInfopageDemosTextLinkB9}
+                       \ _{MsgInfopageDemosTextSuffix9}
+                       _{MsgInfopageDemosText10}
                     ^{proofcheck 8 "magnusQL" "render resize" ":|-:-ExAy(-Fyy <-> Fxy)" russellTheoremForallx}
                     ^{proofcheck 9 "thomasBolducAndZachFOL" "render resize" ":|-:-ExAy(-Fyy <-> Fxy)" russellTheoremCalgary}
                 <div.demo>
-                    <p>_{MsgInfopageDemosText14}
+                    <p>_{MsgInfopageDemosText11}
                     ^{proofcheck 10 "secondOrder" "render resize" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
                 <div.demo>
-                    <p>_{MsgInfopageDemosText15}
+                    <p>_{MsgInfopageDemosText12}
                     ^{proofcheck 11 "polyadicSecondOrder" "render resize" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
                 <div.demo>
-                    <p>_{MsgInfopageDemosText16} #
-                       <em>How to Prove It#
-                       _{MsgInfopageDemosText17}
+                    <p>_{MsgInfopageDemosTextPrefix13} #
+                       <em>_{MsgInfopageDemosTextItalics13}#
+                       _{MsgInfopageDemosTextSuffix13}
                     ^{proofcheck 12 "elementarySetTheory" "render resize" "a within P(a) :|-: P(a) within P(P(a)) " transitiveTheorem}
                 <div.demo>
-                    <p>_{MsgInfopageDemosText18} #
-                       <a href="http://courses.umass.edu/phil511-gmh/MAIN/IHome-1.htm">Modal Logic#
-                       .
-                    <p>_{MsgInfopageDemosText19} #
-                       <a href="https://github.com/gleachkr/FiraLogic">Fira Logic
-                       _{MsgInfopageDemosText20}
+                    <p>_{MsgInfopageDemosTextPrefix14} #
+                       <a href="http://courses.umass.edu/phil511-gmh/MAIN/IHome-1.htm">_{MsgInfopageDemosTextLink14}#
+                        _{MsgInfopageDemosTextSuffix14}
+                       \.
+                    <p>_{MsgInfopageDemosTextPrefix15} #
+                       <a href="https://github.com/gleachkr/FiraLogic">_{MsgInfopageDemosTextLink15}
+                       _{MsgInfopageDemosTextSuffix15}
                     ^{proofcheck 13 "hardegree5" "fonts guides resize" ":|-:<>[]P->[]P" axiomFiveTheorem}
                     ^{proofcheck 14 "hardegreeB" "fonts guides resize" ":|-: <>[]P->P" axiomBTheorem}
                 <div.demo>
-                    <p>_{MsgInfopageDemosText21} #
-                       <a href="http://courses.umass.edu/phil511-gmh/MAIN/IHome-1.htm">Modal Logic#
-                       .
+                    <p>_{MsgInfopageDemosTextPrefix16} #
+                       <a href="http://courses.umass.edu/phil511-gmh/MAIN/IHome-1.htm">_{MsgInfopageDemosTextLink16}#
+                       _{MsgInfopageDemosTextSuffix16}
+                       \.
                     ^{proofcheck 15 "hardegreeMPL" "fonts guides resize" ":|-: Ax[]Fx->[]AxFx" barcanTheorem}
                 <div.demo>
-                    <p>_{MsgInfopageDemosText22} #
-                       <a href="https://github.com/gleachkr/ProofJS">ProofJS#
-                       . _{MsgInfopageDemosText23}
+                    <p>_{MsgInfopageDemosTextPrefix17} #
+                       <a href="https://github.com/gleachkr/ProofJS">_{MsgInfopageDemosTextPrefix17}#
+                       _{MsgInfopageDemosTextSuffix17}
+                       \. _{MsgInfopageDemosText18}
                     ^{sequentcheck 16 "foLK" "" "AxEy(F(x)/\\G(y)):|-:EyAx(F(x)/\\G(y))" sequentDemo}
                 <div.demo>
-                    <p>_{MsgInfopageDemosText24} #
+                    <p>_{MsgInfopageDemosTextPrefix19} #
                        <a href="https://the21stcenturymonads.net/forallx/">
-                           Kevin Klement's forallx proofchecker
-                       _{MsgInfopageDemosText25} #
-                       <i>Forall x
-                       \ _{MsgInfopageDemosText26}
+                           _{MsgInfopageDemosTextLink19}
+                       _{MsgInfopageDemosTextSuffix19} #
                     <div.exercise>
-                        <span>_{MsgInfopageDemosText27}
+                        <span>_{MsgInfopageDemosText20}
                         <div#klementProof>
                             (W ∨ X), (Y ∨ Z), X → Y, ¬Z ∴ W ∨ Y
             <div#demo-selector>
@@ -120,68 +119,56 @@
 
     <section#why>
 
-        <h2>What's Carnap for?
+        <h2>_{MsgInfopageWhy1}
 
-        <p> Carnap is intended for use by educators, students, and researchers
-            \ working on logic. Carnap makes it possible for educators to create
-            \ interactive exercises and teaching materials, and for students to get
-            \ quick and helpful feedback as they learn semantic and syntactic methods
-            \ for determining what follows from what. Carnap also enables researchers
-            \ interested in unorthodox formal systems to rapidly prototype
-            \ proof-checking and semantic tools for computer-assisted logical
-            \ investigation.
+        <p> _{MsgInfopageWhy2}
 
     <section#usage>
-        <h2>How can I use Carnap right now?
+        <h2>_{MsgInfopageUsage1}
 
-        <p>You can use Carnap to teach your own logic class!
+        <p>_{MsgInfopageUsage2}
 
-        <p> All you need to do is <a href="@{AuthR LoginR}">create an account</a>,
-            \ and then <a href="mailto:#{instanceAdmin}">get in touch</a> to
-            \ register as an instructor.
+        <p> _{MsgInfopageUsagePrefix3} #
+            <a href="@{AuthR LoginR}">_{MsgInfopageUsageLinkA3}
+            \ _{MsgInfopageUsageInfix3} #
+            <a href="mailto:#{instanceAdmin}">_{MsgInfopageUsageLinkB3}
+            \ _{MsgInfopageUsageSuffix3}
 
-        <p> Once you're an instructor, you can use this site—the one you're on
-            \ right now, carnap.io—to run your class and automatically grade
-            \ homework. You can either assign problems from the free
-            \ <a href="@{BookR}">textbook</a> hosted here, or you can use your own
-            \ textbook and create automatically graded problem-sets for your own
-            \ preferred system. Carnap currently supports truth-tables and
-            \ translation and parsing exercises, as well as deductions
-            \ compatible with formal systems used in Kalish and Montague's
-            \ <em>Logic</em>, Bergmann and Moore's <em>Logic Book</em>,
-            \ Hardegree's <em>Modal Logic</em>, P.D. Magnus' <em>Forall x</em>,
-            \ and the Calgary Remix of <em>Forall x</em>. But the ambition of
-            \ the project is maximum coverage. So if your favorite system isn't
-            \ supported, let us know and we'll see about adding it.
+        <p> _{MsgInfopageUsage4}
+            _{MsgInfopageUsagePrefix5}
+            <a href="@{BookR}">_{MsgInfopageUsageLink5}
+            \ _{MsgInfopageUsageSuffix5}
+            _{MsgInfopageUsagePrefix6} #
+            <em>_{MsgInfopageUsageItalicsA6}
+            \ _{MsgInfopageUsageInfixA6} #
+            <em>_{MsgInfopageUsageItalicsB6}
+            \ _{MsgInfopageUsageInfixB6} #
+            <em>_{MsgInfopageUsageItalicsC6}
+            \ _{MsgInfopageUsageInfixC6} #
+            <em>_{MsgInfopageUsageItalicsD6}
+            \ _{MsgInfopageUsageInfixD6} #
+            <em>_{MsgInfopageUsageItalicsE6}
+            _{MsgInfopageUsageSuffix6} #
+            \.
+            _{MsgInfopageUsage7}
 
-        <p> Documentation for potential instructors can be found
-            \ <a href="@{ServeR "doc" ["index.md"]}"> here</a>.
+        <p> _{MsgInfopageUsagePrefix8} #
+            <a href="@{ServeR "doc" ["index.md"]}"> _{MsgInfopageUsageLink8}
+            _{MsgInfopageUsageSuffix8}
 
     <section#name>
-        <h2>Why “Carnap”?
+        <h2>_{MsgInfopageName1}
 
-        <p> Carnap is named after Rudolf Carnap, the philosopher quoted above.
+        <p> _{MsgInfopageName2}
 
-        <p> Carnap (the philosopher) famously advocated a tolerant and
-            \ experimental approach to logic. Carnap (the program) is pluralistic by
-            \ design. Inference rules are specified declaratively, making it easy to
-            \ add new logics to those already provided for a given language. The
-            \ algorithms for checking whether inferences are correct are applicable
-            \ to a wide variety of languages, making it easy to introduce new
-            \ languages.
+        <p> _{MsgInfopageName3}
 
-        <p> Carnap (the philosopher) also had a lot to say about logical types,
-            \ and how ignoring them can leave you with beliefs that don’t work very
-            \ well. Carnap (the program) is written in Haskell, a statically-typed
-            \ pure functional programming language that uses a theory of logical
-            \ types to ensure code correctness.
+        <p> _{MsgInfopageName4}
 
     <section#who>
-        <h2>Who Uses Carnap?
+        <h2>_{MsgInfopageWho1}
 
-        <p> Carnap was initially developed at Kansas State University, but is
-            \ now used at dozens of colleges and universities around the world.
-            \ Here's an (incomplete) list:
+        <p>_{MsgInfopageWho2}
         <ul#universities>
             <li> Arizona State University
             <li> Bard College at Simon's Rock
@@ -216,63 +203,36 @@
 
 
     <section#how>
-        <h2>How does Carnap work?
+        <h2>_{MsgInfopageHow1}
 
-        <p> Well, it's a little technical. There are a couple of different tricks involved.
+        <p> _{MsgInfopageHow2}
 
-        <p>Essentially, Haskell's type system makes it possible to represent
-           \ different lexical categories as datatypes, to combine these lexical
-           \ category datatypes into a larger datatype representing a lexicon (using
-           \ something like the method described in
-           <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.101.4131">this paper#
-           \), and to define a language as the result of applying different
-           \ elements of a lexicon to one another in a grammatical way.
+        <p>_{MsgInfopageHowPrefix3} #
+           <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.101.4131">_{MsgInfopageHowLink3}#
+           \_{MsgInfopageHowSuffix3}
 
-        <p>The upshot is that, using Carnap, you can define a language as the
-           \ result of snapping together predefined lexical categories. Thanks to
-           \ Haskell's typeclasses, your languages will inherit various useful
-           \ properties that their constituent lexical categories carry along with
-           \ them (for example, languages that contain the lexical category for
-           \ Boolean connectives will automatically know how to parse and display
-           \ the symbol for “and”, or how to compute the semantic value of
-           \ a conjunction from the semantic values of its conjuncts). And, because
-           \ of Haskell's static typing and the trick of representing lexical
-           \ categories as types, you're guaranteed that any programming mistake
-           \ potentially resulting in an ungrammatical expression will be detected
-           \ when you try to compile the program.
+        <p>_{MsgInfopageHow4}
 
-        <p>By representing a large class of languages uniformly (as the result
-            \ of snapping together lexical categories), we also end up being able to
-            \ manipulate them uniformly. In particular, we can use entirely generic
-            \ algorithms for things like variable substitution, semantic evaluation,
-            \ β-normalization, higher-order unification… all the good stuff that
-            \ you need in order to, for example, check proofs for correctness using
-            \ only a declaration of acceptable inference rules. As a result, we only
-            \ need to write code for these algorithms once; we can then automatically
-            \ use that code with any language that can be defined in the Carnap
-            \ framework.
+        <p>_{MsgInfopageHow5}
 
-        <p>So that's the gist of it. If you'd like to learn more about the
-            \ details, you can inspect the code, talk to a developer, or take
-            \ a look at
-            <a href="http://eptcs.web.cse.unsw.edu.au/paper.cgi?ThEdu17.5">this paper#
-            \.
+        <p>_{MsgInfopageHowPrefix6} 
+            <a href="http://eptcs.web.cse.unsw.edu.au/paper.cgi?ThEdu17.5">_{MsgInfopageHowLink6}#
+            \_{MsgInfopageHowSuffix6}.
 
     <section#contributing>
-        <h2>How can I get involved?
+        <h2>_{MsgInfopageContributing1}
 
-        <p>If you’d like to support Carnap, please consider starring us on
-           \ <a href="https://github.com/gleachkr/Carnap">Github</a>. If you
-           \ have suggestions, feature requests, or bug-reports, you can create
-           \ an issue on Github. For general questions or discussion, you can
-           \ also reach us on
-           <a href="https://matrix.to/#/!AqFOGENiPssQgsjxfE:matrix.org?via=matrix.org">Matrix,
-           \ which is bridged on IRC at
-           <a href="https://web.libera.chat/gamja/?channels=%23carnap">ircs://irc.libera.chat:6697/carnap,
-           \ or over
-           <a href="mailto:gleachkr@ksu.edu">email#
+        <p>_{MsgInfopageContributingPrefix2} 
+           <a href="https://github.com/gleachkr/Carnap">_{MsgInfopageContributingLink2}#
+           \_{MsgInfopageContributingSuffix2}
+           \. _{MsgInfopageContributing3}
+           _{MsgInfopageContributingPrefix4}
+           <a href="https://matrix.to/#/!AqFOGENiPssQgsjxfE:matrix.org?via=matrix.org">_{MsgInfopageContributingLinkA4}
+           \ _{MsgInfopageContributingInfixA4}
+           <a href="https://web.libera.chat/gamja/?channels=%23carnap">_{MsgInfopageContributingLinkB4}
+           \ _{MsgInfopageContributingInfixB4}
+           <a href="mailto:gleachkr@ksu.edu">_{MsgInfopageContributingLinkC4}#
+           \_{MsgInfopageContributingSuffix4}
            \.
 
-        <p>If you’d like to contribute some code to the project—anything from
-           \ a new unification algorithm to a CSS tweak or pandoc template—just put
-           \ in a pull request!
+        <p>_{MsgInfopageContributing5}

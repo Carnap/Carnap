@@ -40,6 +40,7 @@ InfopageDemosTextSuffix4: and visually rendering the proof structure in the Fitc
 InfopageDemosText5: This is a proofbox with a Kalish and Montague System for First-Order Logic, displaying a proof of Russell's Theorem.
 InfopageDemosTextPrefix6: This is a proof with Goldfarb's Lemmon-style system of natural deduction, from the textbook 
 InfopageDemosTextItalics6: Deductive Logic
+InfopageDemosTextSuffix6:
 InfopageDemosText7: Here’s a proof of the fact that the bisectors of the sides of a triangle always meet at a point (from the assumption that a point is on the bisector of a segment if and only if it’s equidistant from the endpoints of that segment). “F(x,y)” abbreviates that “x is on y“, “g(y,z)” abbreviates “the bisector of the segment given by y and z”, and “h(x,z)” abbreviates “the distance from x to z”.
 InfopageDemosText8: (Because of the number of variables, this one may take a moment to load initially. Once loaded, it should respond quickly to changes.)
 InfopageDemosTextPrefix9: Here are two more proofs of Russell's theorem, this time using a version of system QL, from P.D. Magnus' free and open textbook 
@@ -55,13 +56,16 @@ InfopageDemosTextItalics13: Deductive Logic
 InfopageDemosTextSuffix13: ), in a system of elementary set theory.
 InfopageDemosTextPrefix14: Here are proofs of axioms 5 and B within natural deduction systems for propositional modal logics K5 and KTB, in the style of Hardegree's 
 InfopageDemosTextLink14: Modal Logic
+InfopageDemosTextSuffix14:
 InfopageDemosTextPrefix15: These use 
 InfopageDemosTextLink15: Fira Logic
 InfopageDemosTextSuffix15: for nicer-looking logical symbols and use guards to help visually indicate the scope of each subproof.
 InfopageDemosTextPrefix16: Here's a proof of the Barcan Formula within a naïvely quantified system of modal logic, based on the system MPL of Hardegree's
 InfopageDemosTextLink16: Modal Logic
+InfopageDemosTextSuffix16:
 InfopageDemosTextPrefix17: Carnap supports proofs written in the sequent calculus, via 
 InfopageDemosTextLink17: ProofJS
+InfopageDemosTextSuffix17:
 InfopageDemosText18: Among the systems supported are propositional and first order variants of Gentzen's original LK and LJ.
 InfopageDemosTextPrefix19: Carnap also includes a JSON API, making it possible to create pure JavaScript GUIs that use Carnap under the hood for in-browser proof checking. Here's an example of such a GUI, adapted from 
 InfopageDemosTextLink19: Keven Klement's Forall x proof checker
@@ -92,9 +96,12 @@ InfopageUsageInfixC6: P.D. Magnus'
 InfopageUsageItalicsD6: Forall x
 InfopageUsageInfixD6: and the Calgary Remix of
 InfopageUsageItalicsE6: Forall x
+InfopageUsageSuffix6:
 InfopageUsage7: But the ambition of the project is maximum coverage. So if your favorite system isn't supported, let us know and we'll see about adding it.
 InfopageUsagePrefix8: Documentation for potential instructors can be found
 InfopageUsageLink8: here
+InfopageUsageSuffix8:
+
 
 InfopageName1: Why “Carnap”?
 InfopageName2: Carnap is named after Rudolf Carnap, the philosopher quoted above.
@@ -113,10 +120,12 @@ InfopageHow4: The upshot is that, using Carnap, you can define a language as the
 InfopageHow5: By representing a large class of languages uniformly (as the result of snapping together lexical categories), we also end up being able to manipulate them uniformly. In particular, we can use entirely generic algorithms for things like variable substitution, semantic evaluation, β-normalization, higher-order unification… all the good stuff that you need in order to, for example, check proofs for correctness using only a declaration of acceptable inference rules. As a result, we only need to write code for these algorithms once; we can then automatically use that code with any language that can be defined in the Carnap framework.
 InfopageHowPrefix6: So that's the gist of it. If you'd like to learn more about the details, you can inspect the code, talk to a developer, or take a look at 
 InfopageHowLink6: this paper
+InfopageHowSuffix6:
 
 InfopageContributing1: How can I get involved?
 InfopageContributingPrefix2: If you’d like to support Carnap, please consider starring us on 
 InfopageContributingLink2: Github
+InfopageContributingSuffix2:
 InfopageContributing3: If you have suggestions, feature requests, or bug-reports, you can create an issue on Github.
 InfopageContributingPrefix4: For general questions or discussion, you can also reach us on
 InfopageContributingLinkA4: Matrix
@@ -124,6 +133,7 @@ InfopageContributingInfixA4: which is bridged on IRC at
 InfopageContributingLinkB4: ircs://irc.libera.chat:6697/carnap
 InfopageContributingInfixB4: or over
 InfopageContributingLinkC4: email
+InfopageContributingSuffix4:
 InfopageContributing5: If you’d like to contribute some code to the project—anything from a new unification algorithm to a CSS tweak or pandoc template—just put in a pull request!
 
 # templates/auth-layout.hamlet, templates/default-layout.hamlet

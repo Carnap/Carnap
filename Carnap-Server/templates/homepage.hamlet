@@ -9,15 +9,17 @@
 
     <h2>_{MsgHomepageHeader}
 
-    <p> _{MsgHomepageText1} #
-        <a href="https://haskell.org">Haskell
-        \ _{MsgHomepageText2} #
-        <a href="@{InfoR}#who">_{MsgHomepageText3}
-        \ _{MsgHomepageText4}
+    <p> _{MsgHomepageTextPrefix1} #
+        <a href="https://haskell.org">_{MsgHomepageTextLink1}
+        \ _{MsgHomepageTextSuffix1} #
+        \ _{MsgHomepageTextPrefix2} #
+        <a href="@{InfoR}#who">_{MsgHomepageTextLink2}
+        \ _{MsgHomepageTextSuffix2}
 
-    <p> _{MsgHomepageText5}
+    <p> _{MsgHomepageText3}
 
-    <p> _{MsgHomepageText6} #
-        <a href=@{InfoR}>_{MsgHomepageText7}
-        \ _{MsgHomepageText8} #
-        <a href="mailto:gleachkr@ksu.edu">_{MsgHomepageText9}
+    <p> _{MsgHomepageTextPrefix4} #
+        <a href=@{InfoR}>_{MsgHomepageTextLink4}
+        \ _{MsgHomepageTextSuffix4} #
+        \ _{MsgHomepageTextPrefix5} #
+        <a href="mailto:gleachkr@ksu.edu">_{MsgHomepageTextLink5}

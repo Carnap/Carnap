@@ -25,8 +25,7 @@ InfopageWhoUses: Carnap'ı Kim Kullanır?
 InfopageHowWorks: Carnap Nasıl Çalışır?
 InfopageHowHelp: Nasıl Dahil Olabilirim?
 InfopageCarnapQuote1: “Soyut dilsel biçimlerin kabulü ya da reddi, tıpkı herhangi bir bilim dalındaki diğer herhangi bir dil biçiminin kabulü ya da reddi gibi, nihai olarak, elde edilen sonucun gereken çabanın miktarı ve karmaşıklığına oranı yani araç olarak verimlilik tarafından kararlaştırılır. Pratik kullanımdaki başarılarını veya başarısızlıklarını test etmek yerine, belirli dil biçimlerine dogmatik yasaklar koymak, yararsızdan daha kötüdür; kesinlikle zararlıdır çünkü bilimsel ilerlemeyi engelleyebilir.
-InfopageCarnapQuote2: ...
-Herhangi bir araştırma alanında çalışanlara yararlı buldukları herhangi bir ifade biçimini kullanma özgürlüğü tanıyacağız; sahada çalışmak hiçbir yararlı işlevi olmayan biçimlerin er ya da geç ortadan kaldırılmasına yol açar. Dikkatli olmak istiyoruz: iddialarda bulunurken ve onları incelerken eleştirel ama dilsel biçimleri kabul ederken hoşgörülü olmak istiyoruz.”
+InfopageCarnapQuote2: ... Herhangi bir araştırma alanında çalışanlara yararlı buldukları herhangi bir ifade biçimini kullanma özgürlüğü tanıyacağız; sahada çalışmak hiçbir yararlı işlevi olmayan biçimlerin er ya da geç ortadan kaldırılmasına yol açar. Dikkatli olmak istiyoruz: iddialarda bulunurken ve onları incelerken eleştirel ama dilsel biçimleri kabul ederken hoşgörülü olmak istiyoruz.”
 InfopageCarnapQuoteSource: "Görgücülük, Anlambilim ve Varlıkbilim," Anlam ve Zorunluluk, 1956, 2. baskı.
 InfopageWhatIsText: Carnap, formel diller, mantık ve anlambilim oluşturmak ve keşfetmek için ücretsiz ve açık kaynaklı bir Haskell yapısıdır. Dilleri hızlı ve kolay bir şekilde tanımlamanıza, bu diller için mantıklar oluşturmanıza ve anlamlarını belirlemenize olanak tanır. Ardından Carnap, yarattığınız mantığı kullanarak çeşitli formel dizgelerde kanıtları nasıl denetleyeceğinizi, bileşik ifadelerin anlamlarını nasıl bulacağınızı ve çok daha fazlasını bulmak üzere kendi tanımladığınız yönergeleri kullanır.
 
@@ -135,8 +134,6 @@ InfopageContributingInfixB4: adresinden veya
 InfopageContributingLinkC4: e-posta
 InfopageContributingSuffix4: üzerinden de ulaşabilirsiniz.
 InfopageContributing5: Projeye kod katkısı vermek isterseniz (yeni bir birleştirme algoritmasından, bir CSS ince ayarına veya pandoc şablonuna kadar herhangi bir şey) Github'da bir çekme isteğine koymanız yeterlidir!
-
-
 
 # templates/auth-layout.hamlet, templates/default-layout.hamlet
 LayoutAbout: Hakkında

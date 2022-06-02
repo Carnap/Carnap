@@ -94,6 +94,7 @@ activateTranslate w (Just (i,o,opts)) = do
                            mpar@(Just par) <- getParentNode o               
                            insertBefore par (Just bw) (Just o)
                            Just wrapper <- getParentElement o
+                           setAttribute i "enterKeyHint" "go"
                            translate <- newListener $ tryTrans w parser checker tests wrapper ref fs
                            if "nocheck" `elem` optlist 
                                then return ()
