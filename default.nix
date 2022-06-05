@@ -50,18 +50,23 @@ let
 
   inherit (nixpkgs) lib;
 
-  devtools = { isGhcjs }: with nixpkgs.haskell.packages."${ghcVer}"; ([
+  devtools = { isGhcjs }:
+  let
+    modernpkgs = nixpkgs.haskell.packages."${ghcVer}";
+    pkgs = if isGhcjs then nixpkgs-stable.haskell.packages.ghc865 else modernpkgs;
+  in with pkgs; ([
     Cabal
     cabal-install
     ghcid
-    hasktags
-    yesod-bin
     # hls is disabled for ghcjs shells because it probably will not work on
     # pure-ghcjs components.
-  ] ++ (lib.optional (hls && !isGhcjs) haskell-language-server)
+  ] ++ (lib.optionals (hls && !isGhcjs) [haskell-language-server])
   ) ++ (with nixpkgs; [
     cabal2nix
     niv
+  ]) ++ (with modernpkgs; [
+    yesod-bin
+    hasktags
   ]);
 
   in rec {
