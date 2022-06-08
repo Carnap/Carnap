@@ -8,6 +8,7 @@ import           Import
 import           Text.Read     (read)
 import           Util.Data
 import           Util.Database
+import           Util.Sql
 
 --This is probably marginally more efficient when you have problems but not
 --a list of assignments
@@ -83,8 +84,7 @@ scoreByIdAndClassTotal cid uid =
 
 scoreByIdAndClassPerProblem :: Key Course -> Key User -> HandlerFor App [(Either (Key AssignmentMetadata) Text, Int, Text)]
 scoreByIdAndClassPerProblem cid uid =
-        do pq <- getProblemQuery uid cid
-           subs <- map entityVal <$> (runDB $ selectList pq [])
+        do subs <- map entityVal <$> runDB (problemsCompletedByUserIn uid cid)
            textbookproblems <- getProblemSets cid
            accommodation <- (runDB $ getBy $ UniqueAccommodation cid uid)
                         >>= return . maybe 0 (accommodationDateExtraHours . entityVal)
