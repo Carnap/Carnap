@@ -6,7 +6,7 @@ import           Data.Time
 import           Data.Time.Zones
 import           Data.Time.Zones.All
 import           Import
-import           Util.Database       (problemQuery)
+import           Util.Sql
 import           Util.Handler
 
 getAPIInstructorStudentsR :: Text -> Text -> Handler Value
@@ -24,10 +24,8 @@ getAPIInstructorStudentR ident coursetitle udid = do
 getAPIInstructorStudentSubmissionsR :: Text -> Text -> UserDataId -> Handler Value
 getAPIInstructorStudentSubmissionsR ident coursetitle udid = do
              Entity cid _course <- canAccessClass ident coursetitle
-             subs <- runDB $ do asmd <- selectList [AssignmentMetadataCourse ==. cid] []
-                                ud <- studentEnrolled udid cid
-                                let pq = problemQuery (userDataUserId ud) (map entityKey asmd)
-                                selectList pq []
+             subs <- runDB $ do UserData {..} <- studentEnrolled udid cid
+                                problemsCompletedByUserIn userDataUserId cid
              returnJson (map entityVal subs)
 
 getAPIInstructorStudentExtensionsR :: Text -> Text -> UserDataId -> Handler Value

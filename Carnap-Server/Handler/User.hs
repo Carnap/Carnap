@@ -12,6 +12,7 @@ import Data.Time.Zones
 import Data.Time.Zones.All
 import Util.Data
 import Util.Database
+import Util.Sql
 import Util.Grades
 import qualified Data.IntMap as IM
 import Data.IntMap ((!))
@@ -104,8 +105,7 @@ getUserR ident = do
                                accommodation <- getBy (UniqueAccommodation cid uid)
                                             >>= return . maybe 0 (accommodationDateExtraHours . entityVal)
                                extensions <- mapM (\asgn -> getBy $ UniqueExtension (entityKey asgn) uid) asmd 
-                               let pq = problemQuery uid (map entityKey asmd) 
-                               subs <- map entityVal <$> selectList pq []
+                               subs <- map entityVal <$> problemsCompletedByUserIn uid cid
                                return (asmd, extensions, accommodation, subs)
                     assignments <- assignmentsOf accommodation course textbookproblems (zip asmd extensions)
                     subtable <- problemsToTable course accommodation textbookproblems (zip asmd extensions) subs

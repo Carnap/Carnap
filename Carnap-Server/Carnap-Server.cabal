@@ -66,6 +66,7 @@ library
                      Util.API
                      Util.Data
                      Util.Grades
+                     Util.Sql
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
@@ -110,6 +111,7 @@ library
                  , persistent                    >=2.8 && <2.14
                  , persistent-postgresql         >=2.8 && <2.14
                  , persistent-sqlite
+                 , esqueleto
                  , template-haskell
                  , th-utilities
                  , shakespeare                   >= 2.0        && < 2.1

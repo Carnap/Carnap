@@ -223,18 +223,3 @@ udByInstructorId id = do l <- runDB $ selectList [UserDataInstructorId ==. Just 
                                    [] -> error $ "couldn't find any user data for instructor " ++ show id
                                    _ -> error $ "Multiple user data for instructor " ++ show id
 
-getProblemQuery
-    :: PersistentSite site
-    => Key User
-    -> Key Course
-    -> HandlerFor site [Filter ProblemSubmission]
-getProblemQuery uid cid = do asl <- runDB $ map entityKey <$> selectList [AssignmentMetadataCourse ==. cid] []
-                             return $ problemQuery uid asl
-
-problemQuery
-    :: Key User
-    -> [Key AssignmentMetadata]
-    -> [Filter ProblemSubmission]
-problemQuery uid asl = [ProblemSubmissionUserId ==. uid]
-                    ++ ([ProblemSubmissionSource ==. Book] ||. [ProblemSubmissionAssignmentId <-. assignmentList])
-        where assignmentList = map Just asl
