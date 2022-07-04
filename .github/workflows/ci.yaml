@@ -29,9 +29,16 @@ jobs:
         os: ${{ fromJSON(needs.matrix-prep.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
+      - name: check if nix is present
+        id: check-nix
+        run: |
+          ret=0
+          command -v nix || ret=$?
+          echo "::set-output name=need-nix::${ret}"
       - uses: cachix/install-nix-action@v15
         with:
           nix_path: nixpkgs=channel:nixos-unstable
+        if: ${{ steps.check-nix.outputs.need-nix != '0' }}
       - uses: cachix/cachix-action@v10
         with:
           name: carnap
@@ -58,9 +65,18 @@ jobs:
       - run: 'mkdir -p "${XDG_RUNTIME_DIR}"'
       - run: "echo url: docker://$(echo ${IMG_REF} | envsubst | tr 'A-Z' 'a-z')"
       - uses: actions/checkout@v2
+      - name: check if nix is present
+        id: check-nix
+        run: |
+          ret=0
+          command -v nix || ret=$?
+          echo "::set-output name=need-nix::${ret}"
       - uses: cachix/install-nix-action@v15
         with:
           nix_path: nixpkgs=channel:nixos-unstable
+        # self-hosted runner already has nix installed
+        if: ${{ steps.check-nix.outputs.need-nix != '0' }}
+
       - run: nix-shell -p skopeo --run "skopeo --insecure-policy login docker.pkg.github.com -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}"
       - uses: cachix/cachix-action@v10
         with:
