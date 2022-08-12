@@ -35,6 +35,7 @@ import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PurePropositional.Logic.Bonevac
 import Carnap.Languages.PurePropositional.Logic.Carnap
 import Carnap.Languages.PurePropositional.Logic.Cortens
+import Carnap.Languages.PurePropositional.Logic.Davis
 import Carnap.Languages.PurePropositional.Logic.EbelsDuggan
 import Carnap.Languages.PurePropositional.Logic.Equivalence
 import Carnap.Languages.PurePropositional.Logic.Gallow
@@ -67,6 +68,7 @@ ofPropSys f sys | sys == "LogicBookSD"                   = Just $ f logicBookSDC
                 | sys == "belotSDPlus"                   = Just $ f belotSDPlusCalc
                 | sys == "bonevacSL"                     = Just $ f bonevacSLCalc
                 | sys == "cortensSL"                     = Just $ f cortensSLCalc
+                | sys == "davisSL"                       = Just $ f davisSLCalc
                 | sys == "ebelsDugganTFL"                = Just $ f ebelsDugganTFLCalc 
                 | sys == "gallowSL"                      = Just $ f gallowSLCalc
                 | sys == "gallowSLPlus"                  = Just $ f gallowSLPlusCalc

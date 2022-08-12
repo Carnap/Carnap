@@ -32,6 +32,10 @@ activate cls extra chunk
           opts adhoc = unions [fromList extra, fromList fixed, fromList adhoc]
           template myOpts = exerciseWrapper (toList myOpts) (numof h) $
                                 case T.splitOn ":" (contentOf h) of
+                                  --BUG the fact that this only pattern
+                                  --matches when we have a two-element list
+                                  --makes trouble when the translation text
+                                  --contains a ":"
                                   [_,y] -> Div ("",[], map toDataCarnap $ toList myOpts)
                                             [Plain [Str (case t of [] -> y; _ -> unlines' t)]]
-                                  _ -> Div ("",[],[]) [Plain [Str "No Matching Translation"]]
+                                  _ -> Div ("",[],[]) [Plain [Str (contentOf h)]]
