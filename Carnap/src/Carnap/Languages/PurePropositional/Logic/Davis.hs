@@ -20,6 +20,9 @@ import Carnap.Languages.Util.LanguageClasses
 data DavisSL = DavisSL MagnusSLPlus | TautAndL | TautAndR | TautOrL | TautOrR
 
 instance Show DavisSL where
+        show (DavisSL (MSL ConjIntro))  = "∧I"
+        show (DavisSL (MSL ConjElim1))  = "∧E"
+        show (DavisSL (MSL ConjElim2))  = "∧E"
         show (DavisSL x) = show x
         show TautAndL = "Taut"
         show TautAndR = "Taut"
