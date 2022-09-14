@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Davis 
-(davisSLCalc) where
+(davisSLCalc, parseDavisSL, DavisSL(..)) where
 
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)

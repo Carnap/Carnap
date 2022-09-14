@@ -29,6 +29,7 @@ import Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PureFirstOrder.Logic.Bonevac
 import Carnap.Languages.PureFirstOrder.Logic.Carnap
 import Carnap.Languages.PureFirstOrder.Logic.Cortens
+import Carnap.Languages.PureFirstOrder.Logic.Davis
 import Carnap.Languages.PureFirstOrder.Logic.EbelsDuggan
 import Carnap.Languages.PureFirstOrder.Logic.Equivalence
 import Carnap.Languages.PureFirstOrder.Logic.Gallow
@@ -64,6 +65,7 @@ ofFOLSys f sys | sys == "LogicBookPD"                     = Just $ f logicBookPD
                | sys == "belotPDPlus"                     = Just $ f belotPDPlusCalc   
                | sys == "bonevacQL"                       = Just $ f bonevacQLCalc
                | sys == "cortensQL"                       = Just $ f cortensQLCalc
+               | sys == "davisQL"                         = Just $ f davisQLCalc
                | sys == "ebelsDugganFOL"                  = Just $ f ebelsDugganFOLCalc
                | sys == "firstOrder"                      = Just $ f folCalc
                | sys == "gallowPL"                        = Just $ f gallowPLCalc
