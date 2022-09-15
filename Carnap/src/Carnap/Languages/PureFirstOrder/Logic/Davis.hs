@@ -66,7 +66,7 @@ instance Inference DavisQL PureLexiconFOL (Form Bool) where
         isPremise (Magnus (MagnusQL (Pr prems))) = True
         isPremise _ = False
 
-parseDavisQL rtc = try liftMagnus <|> liftDavis
+parseDavisQL rtc = try (string "PR" >> return [(Magnus (MagnusQL (Pr (problemPremises rtc))))]) <|> try liftDavis <|> liftMagnus
     where liftMagnus = map Magnus <$> parseMagnusQLPlus rtc
           liftDavis = map Davis <$> parseDavisSL defaultRuntimeDeductionConfig
 

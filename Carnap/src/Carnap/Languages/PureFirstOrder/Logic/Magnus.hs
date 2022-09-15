@@ -52,6 +52,7 @@ instance Inference MagnusQL PureLexiconFOL (Form Bool) where
 
          ruleOf IDE1   = leibnizLawVariations !! 0
          ruleOf IDE2   = leibnizLawVariations !! 1
+         ruleOf x@(MagnusSL _) = premisesOf x ∴ conclusionOf x
          ruleOf (Pr _) = axiom
 
          premisesOf (MagnusSL x) = map liftSequent (premisesOf x)
