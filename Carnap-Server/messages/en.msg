@@ -177,3 +177,44 @@ CarnapBookAppendix: Appendix
 CarnapBookSpecialSections: Special Sections:
 CarnapBookIndexOfRules: Index of Rules
 CarnapBookLicense: is licensed under a
+
+# templates/user.hamlet
+
+UserPageHeader1: Homepage for
+UserPageText1: This is your homepage, where you can keep track of your progress in the course, and find other useful information.
+UserPageTextInstructor: Your instructor page is
+UserPageTextInstructorLink: here
+UserPageTable1Title: Upcoming Problems
+UserPageTable1DueDates: Due Dates
+UserPageTable2Title: Total Points Earned
+UserPageTable3Title: Completed Problems
+UserPageTable3Source: Source
+UserPageTable3Exercise: Exercise
+UserPageTable3Content: Content
+UserPageTable3Submitted: Submitted
+UserPageTable3Points: Points
+UserPageTable3Type: Type
+UserPageTable4Title: Your Profile
+PersonalInformation: Personal Information
+
+#Handler/User.hs
+
+UserNotEnrolled: You are not currently enrolled in any class. You can enroll in a class by editing your personal information, below.
+NoExistingAssignment: No existing assignment
+
+Assignment: Assignment
+DueDate: Due Date
+Description: Description
+ProblemSet: Problem Set
+NoDueDate: No Due Date
+UpdateUserData: Update User Data
+
+UserFirstName: First Name
+UserLastName: Last Name
+UserCourseEnrollment: Course Enrollment
+UserUniversityId: University Id
+
+Unenroll: Unenroll
+Edit: Edit
+
+NoUserPage: This user does not exist
