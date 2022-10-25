@@ -53,7 +53,7 @@
                 <div.demo>
                     <p>_{MsgInfopageDemosTextPrefix6} #
                        <em>_{MsgInfopageDemosTextItalics6}
-                       _{MsgInfopageDemosTextPrefix6}.
+                       _{MsgInfopageDemosTextSuffix6}.
                     ^{proofcheck 6 "goldfarbNDPlus" "render resize" "ExAy(Kxy -> Fxy), AxEyKxy :|-: ExEyFxy" lemmonTheorem}
                 <div.demo>
                     <p>_{MsgInfopageDemosText7}
@@ -97,7 +97,7 @@
                     ^{proofcheck 15 "hardegreeMPL" "fonts guides resize" ":|-: Ax[]Fx->[]AxFx" barcanTheorem}
                 <div.demo>
                     <p>_{MsgInfopageDemosTextPrefix17} #
-                       <a href="https://github.com/gleachkr/ProofJS">_{MsgInfopageDemosTextPrefix17}#
+                       <a href="https://github.com/gleachkr/ProofJS">_{MsgInfopageDemosTextLink17}#
                        _{MsgInfopageDemosTextSuffix17}
                        \. _{MsgInfopageDemosText18}
                     ^{sequentcheck 16 "foLK" "" "AxEy(F(x)/\\G(y)):|-:EyAx(F(x)/\\G(y))" sequentDemo}
