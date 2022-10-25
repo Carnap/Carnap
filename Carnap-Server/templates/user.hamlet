@@ -1,19 +1,19 @@
 <div.container>
     ^{updateWidget updateForm encTypeUpdate}
-    <h1> Homepage for #{firstname} #{lastname}
-    <p> This is your homepage, where you can keep track of your progress in the course, and find other useful information.
+    <h1> _{MsgUserPageHeader1} #{firstname} #{lastname}
+    <p> _{MsgUserPageText1}
     $if isInstructor
-        <p> Your instructor page is 
-            <a href=@{InstructorR ident}>here
-    <h3> Upcoming Problems
+        <p> _{MsgUserPageTextInstructor} 
+            <a href=@{InstructorR ident}>_{MsgUserPageTextInstructorLink}
+    <h3> _{MsgUserPageTable1Title}
     <div.row>
         <div.col-md-8>
             <div.card>
-                <div.card-header> Due Dates
+                <div.card-header> _{MsgUserPageTable1DueDates}
                 ^{assignments}
         <div.col-md-4>
             <div.card>
-                <div.card-header> Total Points Earned
+                <div.card-header> _{MsgUserPageTable2Title}
                 <div.card-block.text-center>
                     <span style="font-size:64pt; color:gray">
                         <span#score-numerator>-#
@@ -21,7 +21,7 @@
                             <span>/#
                             <span#score-denominator>#{courseTotalPoints course}
     <div>
-    <h3 style="padding-top:10pt"> Completed Problems
+    <h3 style="padding-top:10pt"> _{MsgUserPageTable3Title}
     <div.card>
         <div.table-responsive>
             <table.table.table-striped>
@@ -33,24 +33,24 @@
                 <col style="width:50px">
                 <thead#problem-table-head>
                     <th style="cursor:pointer" onclick="sortUsersByCol(0)">
-                        Source
+                        _{MsgUserPageTable3Source}
                         <i class="fa fa-sort" aria-hidden="true"></i>
                     <th style="cursor:pointer" onclick="sortUsersByCol(1)">
-                        Exercise
+                        _{MsgUserPageTable3Exercise}
                         <i class="fa fa-sort" aria-hidden="true"></i>
-                    <th>Content
+                    <th>_{MsgUserPageTable3Content}
                     <th style="cursor:pointer" onclick="sortUsersByCol(3)">
-                        Submitted
+                        _{MsgUserPageTable3Submitted}
                         <i class="fa fa-sort" aria-hidden="true"></i>
-                    <th>Points
+                    <th>_{MsgUserPageTable3Points}
                     <th style="cursor:pointer" onclick="sortUsersByCol(5)">
-                        Type
+                        _{MsgUserPageTable3Type}
                         <i class="fa fa-sort" aria-hidden="true"></i>
                 <tbody#problem-table-body>
                     #{subtable}
-    <h3> Your Profile
+    <h3> _{MsgUserPageTable4Title}
     <div.card>
-        <div.card-header> Personal Information
+        <div.card-header> _{MsgPersonalInformation}
         <div.card-block>
             ^{personalInfo ud (Just course)}
             $if (not userDataIsLti)

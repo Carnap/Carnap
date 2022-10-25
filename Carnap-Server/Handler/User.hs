@@ -124,12 +124,12 @@ getUserR ident = do
                                 [whamlet|
                                 <div.container>
                                     ^{updateWidget updateForm encTypeUpdate}
-                                    <p> You are not currently enrolled in any class. You can enroll in a class by editing your personal information, below.
+                                    <p> _{MsgUserNotEnrolled}
                                     $if isInstructor
-                                        <p> Your instructor page is #
-                                            <a href=@{InstructorR ident}>here
+                                        <p> _{MsgUserPageTextInstructor} #
+                                            <a href=@{InstructorR ident}>_{MsgUserPageTextInstructorLink}
                                     <div.card>
-                                        <div.card-header> Personal Information
+                                        <div.card-header> _{MsgPersonalInformation}
                                         <div.card-block>
                                             ^{personalInfo ud Nothing}
                                     <a href=@{AuthR LogoutR}>
@@ -214,19 +214,19 @@ assignmentsOf accommodation course textbookproblems asmdex = do
                     <table.table.table-striped>
                         <thead#assignment-table-head>
                             <th style="cursor:pointer" onclick="sortByCol(this,0)">
-                                Assignment
+                                _{MsgAssignment}
                                 <i class="fa fa-sort" aria-hidden="true"></i>
                             <th style="cursor:pointer" onclick="sortByCol(this,1)">
-                                Due Date
+                                _{MsgDueDate}
                                 <i class="fa fa-sort" aria-hidden="true"></i>
-                            <th> Description
+                            <th> _{MsgDescription}
                         <tbody#assignment-table-body>
                             $maybe dd <- textbookproblems
                                 $forall (num,due) <- IM.toList (readAssignmentTable dd)
                                     <tr>
                                         <td>
                                             <a href=@{ChapterR $ chapterOfProblemSet ! num}>
-                                                Problem Set #{show num}
+                                                _{MsgProblemSet} #{show num}
                                         <td>
                                             #{dateDisplay (addUTCTime accommodationUTC due) course}
                                         <td>
@@ -248,7 +248,7 @@ assignmentsOf accommodation course textbookproblems asmdex = do
                                                 $maybe due <- assignmentMetadataDuedate a
                                                     <td>#{dateDisplay (addUTCTime accommodationUTC due) course}
                                                 $nothing
-                                                    <td>No Due Date
+                                                    <td> _{MsgNoDueDate}
                                             $maybe desc <- assignmentMetadataDescription a
                                                 <td>
                                                     <div.assignment-desc>#{desc}
@@ -270,7 +270,7 @@ updateWidget form enc = [whamlet|
                         <div class="modal-dialog" role="document">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h5 class="modal-title" id="updateUserDataLabel">Update User Data</h5>
+                                    <h5 class="modal-title" id="updateUserDataLabel">_{MsgUpdateUserData}</h5>
                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                       <span aria-hidden="true">&times;</span>
                                 <div class="modal-body">
@@ -285,30 +285,30 @@ dropWidget form enc = [whamlet|
                         <form id="drop-class" style="display:inline-block" method=post enctype=#{enc}>
                             ^{form}
                             <div.form-group>
-                                <input.btn.btn-primary type=submit value="Unenroll">
+                                <input.btn.btn-primary type=submit value="_{MsgUnenroll}">
                       |]
 
-personalInfo :: UserData -> Maybe Course -> WidgetFor site ()
+personalInfo :: UserData -> Maybe Course -> WidgetFor App ()
 personalInfo (UserData {userDataUniversityId = muniversityid,
                         userDataFirstName = firstname, userDataLastName = lastname,
                         userDataIsLti = isLti }) mcourse
     = [whamlet|
         <dl.row>
-            <dt.col-sm-3>First Name
+            <dt.col-sm-3>_{MsgUserFirstName}
             <dd.col-sm-9>#{firstname}
-            <dt.col-sm-3>Last Name
+            <dt.col-sm-3>_{MsgUserLastName}
             <dd.col-sm-9>#{lastname}
             $maybe course <- mcourse
-                <dt.col-sm-3>Course Enrollment
+                <dt.col-sm-3> _{MsgUserCourseEnrollment}
                 <dd.col-sm-9>#{courseTitle course}
                 $maybe desc <- courseDescription course
                     <dd.col-sm-9.offset-sm-3>#{desc}
             $maybe universityid <- muniversityid
-                <dt.col-sm-3>University Id
+                <dt.col-sm-3> _{MsgUserUniversityId}
                 <dd.col-sm-9>#{universityid}
         $if not isLti
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#updateUserData">
-                Edit
+                _{MsgEdit}
     |]
 
 updateUserDataForm
@@ -337,8 +337,8 @@ updateUserDataForm UserData {userDataUniversityId = muniversityid, userDataFirst
 dropClassForm :: B.Markup -> MForm (HandlerFor App) (FormResult (), WidgetFor App ())
 dropClassForm = renderBootstrap3 BootstrapBasicForm $ pure () 
 
-nouserPage :: WidgetFor site ()
+nouserPage :: WidgetFor App ()
 nouserPage = [whamlet|
              <div.container>
-                <p> This user does not exist
+                <p> _{MsgNoUserPage}
              |]
