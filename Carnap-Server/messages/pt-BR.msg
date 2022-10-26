@@ -62,7 +62,7 @@ InfopageDemosTextLink15: Fira Logic
 InfopageDemosTextSuffix15: para símbolos lógicos mais bonitos e usa linhas verticais para ajudar a indicar visualmente o escopo de cada subprova.
 InfopageDemosTextPrefix16: Aqui está uma prova da Fórmula Barcan em um sistema modal com quantificação ingênua, baseado no sistema MPL do livro
 InfopageDemosTextLink16: "Modal Logic"
-InfopageDemosTextSuffix16: de Hardegree.
+InfopageDemosTextSuffix16:  de Hardegree
 InfopageDemosTextPrefix17: O Carnap suporta provas escritas no cálculo de sequentes, via
 InfopageDemosTextLink17: ProofJS
 InfopageDemosTextSuffix17:
@@ -73,7 +73,7 @@ InfopageDemosTextSuffix19: que utiliza o sistema SL do "Forall x" de P.D. Magnus
 InfopageDemosText20: exemplo 17
 
 InfopageWhy1: Para que serve o Carnap?
-InfopageWhy2: A intenção do Carnap é para uso de educadores, estudantes e pesquisadores que trabalham com lógica. O Carnap possibilita que educadores criem exercícios interativos e materiais didáticos, também permite que estudantes obtenham comentários rápidos e úteis enquanto aprendem métodos semânticos e sintáticos para determinar o que segue de que. O Carnap também pode ser utilizado para investigações em lógica assistidas por computador, permitindo que pesquisadores interessados em sistemas formais não-ortodoxos possam implementar rapidamente protótipos, tanto de verificadores de prova, quanto de ferramentas semânticas.
+InfopageWhy2: Carnap é direcionado a educadores, estudantes e pesquisadores que trabalham com lógica. O Carnap possibilita que educadores criem exercícios interativos e materiais didáticos, também permite que estudantes obtenham comentários rápidos e úteis enquanto aprendem métodos semânticos e sintáticos para determinar o que segue de que. O Carnap também pode ser utilizado para investigações em lógica assistidas por computador, permitindo que pesquisadores interessados em sistemas formais não-ortodoxos possam implementar rapidamente protótipos, tanto de verificadores de prova, quanto de ferramentas semânticas.
 
 InfopageUsage1: Como utilizar o Carnap agora mesmo?
 InfopageUsage2: Você pode utilizar o Carnap para ministrar suas aulas de lógica!
@@ -82,18 +82,18 @@ InfopageUsageLinkA3: criar uma conta
 InfopageUsageInfix3: e então 
 InfopageUsageLinkB3: entrar em contato
 InfopageUsageSuffix3: para se registrar como um instrutor.
-InfopageUsage4: Uma vez cadastrado como instrutor, você pode utilizar este site --o que você está acessando agora, carnap.pontofixo.net.br-- para ministrar suas aulas e ter tarefas extraclasse automaticamente corrigidas.
-InfopageUsagePrefix5: Você pode, ou atribuir questões a partir do livro texto livre e aberto
-InfopageUsageLink5: manual
-InfopageUsageSuffix5: hospedado aqui (o livro está em inglês), ou usar seu próprio manual e criar para o seu sistema preferido, questionários a serem corrigidos automaticamente.
+InfopageUsage4: Uma vez cadastrado como instrutor, você pode utilizar este site --o que você está acessando agora-- para ministrar suas aulas e ter tarefas extraclasse automaticamente corrigidas.
+InfopageUsagePrefix5: Você pode, ou atribuir questões a partir do
+InfopageUsageLink5: manual livre e aberto
+InfopageUsageSuffix5: hospedado aqui, ou usar seu próprio manual e criar para o seu sistema preferido, questionários a serem corrigidos automaticamente.
 InfopageUsagePrefix6: O Carnap atualmente suporta tabelas de verdade, traduções, exercícios de sintaxe, bem como deduções compatíveis com os sistemas formais usados pelo livro de Kalish e Montague, chamamdo
-InfopageUsageItalicsA6: Logic
+InfopageUsageItalicsA6: Logic,
 InfopageUsageInfixA6: o livro de Bergmann e More, chamado
-InfopageUsageItalicsB6: Logic Book
+InfopageUsageItalicsB6: Logic Book,
 InfopageUsageInfixB6: o livro de Hardegree, chamado
-InfopageUsageItalicsC6: Modal Logic
+InfopageUsageItalicsC6: Modal Logic,
 InfopageUsageInfixC6: o livro de P.D. Magnus, chamado
-InfopageUsageItalicsD6: Forall x
+InfopageUsageItalicsD6: Forall x,
 InfopageUsageInfixD6: e para o Remix de Calgary de
 InfopageUsageItalicsE6: Forall x
 InfopageUsageSuffix6:
@@ -115,9 +115,9 @@ InfopageHow1: Como o Carnap funciona?
 InfopageHow2: Bem, isto é um pouco técnico. Seguem alguns dos truques envolvidos.
 InfopageHowPrefix3: Essencialmente, o sistema de tipos de Haskell possibilita representar diferentes categorias léxicas como tipos de dados, e permite combinar esses tipos de dados léxicos em um tipo de dado mais amplo, representando um léxico (utilizando algo como o método descrito em
 InfopageHowLink3: este artigo
-InfopageHowSuffix3: ), e definir uma linguagem como o resultado de aplicar gramaticalmente distintos elementos do léxico um ao outro.
+InfopageHowSuffix3: ), e definir uma linguagem como o resultado de aplicar elementos gramaticalmente distintos do léxico uns aos outros.
 InfopageHow4: O resumo é que, usando Carnap, você pode definir uma linguagem como o resultado de juntar categorias léxicas predefinidas. Graças às typeclasses do Haskell, suas linguagens herdarão várias propriedades úteis que suas categorias léxicas constituintes possuem (por exemplo, linguagens que contem a categoria léxica de conectivos booleanos automaticamente saberão como tratar e mostrar o símbolo para "e", ou como computar o valor semântico para a conjunção a partir dos valores semânticos dos seus constituintes). E, por causa da tipagem estática do Haskell, e o truque de representar categorias léxicas como tipos, há a garantia que qualquer erro de programação, potencialmente resultando em uma expressão não gramatical, será detectado quando você tentar compilar o programa.
-InfopageHow5: Ao representar uniformemente uma ampla classe de linguagens (como resultado de juntar as categorias léxicas), nós também acabamos sendo capazes de manipulá-los uniformemente. Em particular, nós podemos utilizar algoritmos completamente genéricos para coisas como substituição de variáveis, valoração semântica,  β-normalização, unificação de ordem superior … tudo de bom que você precisa para, por exemplo, verificar a correção de provas, usando apenas a especificação de quais inferências são aceitáveis. Assim, nós apenas precisamos escrever o códico para estes algoritmos uma vez; então utilizaremos este código para qualquer linguagem definida na plataforma Carnap.
+InfopageHow5: Ao representar uniformemente uma ampla classe de linguagens (como resultado de juntar as categorias léxicas), nós também acabamos sendo capazes de manipulá-los uniformemente. Em particular, nós podemos utilizar algoritmos completamente genéricos para coisas como substituição de variáveis, valoração semântica,  β-normalização, unificação de ordem superior … tudo de bom que você precisa para, por exemplo, verificar a correção de provas, usando apenas a especificação de quais inferências são aceitáveis. Assim, nós apenas precisamos escrever o código para estes algoritmos uma vez; então utilizaremos este código para qualquer linguagem definida na plataforma Carnap.
 InfopageHowPrefix6: Então essa é a ideia. Se você gostaria de aprender mais sobre os detalhes, você pode inspecionar o código, falar com um desenvolvedor, ou dar uma olhada  
 InfopageHowLink6: neste artigo 
 InfopageHowSuffix6:
@@ -126,7 +126,7 @@ InfopageContributing1: Como me envolver?
 InfopageContributingPrefix2: Se você gostaria de apoiar o Carnap, por favor considere dar-nos uma estrela no
 InfopageContributingLink2: Github
 InfopageContributingSuffix2:
-InfopageContributing3: Se você tiver sugestões, pedidos de funcionalidades, ou quiser reportar um erro, você pode também nos encontrar no
+InfopageContributing3: Se você tiver sugestões, pedidos de funcionalidades, ou quiser reportar um erro, você pode abrir um "issue" no Github.
 InfopageContributingPrefix4: Para questões gerais ou discussões, você também pode nos encontrar no
 InfopageContributingLinkA4: Matrix
 InfopageContributingInfixA4: para o qual existe uma ponte no IRC em
