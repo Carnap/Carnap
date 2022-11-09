@@ -167,7 +167,6 @@ instance Inference MagnusQLPlus PureLexiconFOL (Form Bool) where
          premisesOf r = upperSequents (ruleOf r)
          
          conclusionOf (MagnusQL (MagnusSL x)) = liftSequent (conclusionOf x)
-         conclusionOf (Plus x) = liftSequent (conclusionOf x)
          conclusionOf r = lowerSequent (ruleOf r)
 
          indirectInference (MagnusQL x) = indirectInference x
