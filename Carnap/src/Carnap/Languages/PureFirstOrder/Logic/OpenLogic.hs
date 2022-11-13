@@ -77,12 +77,12 @@ instance Show OpenLogicFOLJ where
 parseOpenLogicFOLK :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicFOLK]
 parseOpenLogicFOLK rtc = try folParse <|> liftProp
         where liftProp = map LK <$> parseOpenLogicPropLK rtc
-              folParse = do r <- choice (map (try . string) [ "AL", "∀L", "AR","∀R", "EL","∃L", "ER", "∃R" ])
+              folParse = do r <- choice (map (try . string) [ "AL", "@L", "∀L","AR","@R","∀R", "EL","3L", "∃L", "ER", "3R", "∃R" ])
                             return $ (\x -> [x]) $ case r of
-                               r | r `elem` ["AL","∀L"] -> AllL
-                                 | r `elem` ["AR","∀R"] -> AllR
-                                 | r `elem` ["EL","∃L"] -> ExistL
-                                 | r `elem` ["ER","∃R"] -> ExistR
+                               r | r `elem` ["AL", "@L", "∀L"] -> AllL
+                                 | r `elem` ["AR", "@R", "∀R"] -> AllR
+                                 | r `elem` ["EL", "3L", "∃L"] -> ExistL
+                                 | r `elem` ["ER", "3R", "∃R"] -> ExistR
 
 parseOpenLogicFOLJ :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicFOLJ]
 parseOpenLogicFOLJ rtc = map LJ <$> parseOpenLogicFOLK rtc
@@ -92,14 +92,14 @@ parseOpenLogicFONK rtc = (try folParse <|> liftProp) <* spaces <* eof
         where liftProp = map PropNK <$> parseOpenLogicPropNK rtc
               stringOpts = choice . map (try . string)
               folParse = choice . map try $
-                    [ stringOpts ["AIntro", "∀Intro", "AI", "∀I"] >> return [AllI]
-                    , stringOpts ["AElim", "∀Elim", "AE", "∀E"] >> return [AllE]
-                    , stringOpts ["EIntro", "∃Intro", "EI", "∃I"] >> return [ExistsI]
+                    [ stringOpts ["AIntro", "@Intro", "∀Intro", "AI", "@I", "∀I"] >> return [AllI]
+                    , stringOpts ["AElim", "@Elim", "∀Elim", "AE", "@E", "∀E"] >> return [AllE]
+                    , stringOpts ["EIntro", "3Intro", "∃Intro", "EI", "3I", "∃I"] >> return [ExistsI]
                     , stringOpts ["=Intro", "=I"] >> return [EqI]
                     , stringOpts ["=Elim", "=E"] >> return [EqE1, EqE2]
-                    , (stringOpts ["EElim", "∃Elim", "EE", "∃E"] *> spaces *> getLabel) 
+                    , (stringOpts ["EElim", "3Elim", "∃Elim", "EE", "3E", "∃E"] *> spaces *> getLabel) 
                             >>= \s -> return (let val = read s :: Int in [ExistsE val])
-                    , stringOpts ["EElim", "∃Elim", "EE", "∃E"] >> return [ExistsEVac]
+                    , stringOpts ["EElim", "3Elim", "∃Elim", "EE", "3E", "∃E"] >> return [ExistsEVac]
                     ]
               getLabel = (char '(' *> many1 digit <* char ')') <|> many1 digit
 

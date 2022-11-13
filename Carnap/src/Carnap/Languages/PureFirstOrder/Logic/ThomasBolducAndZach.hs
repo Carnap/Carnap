@@ -163,12 +163,12 @@ instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
 
 parseThomasBolducAndZachFOLCore rtc = try quantRule <|> (map TFLC <$> parseProp)
     where parseProp = P.parseThomasBolducAndZachTFLCore (defaultRuntimeDeductionConfig)
-          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E","PR"])
+          quantRule = do r <- choice (map (try . string) ["∀I", "@I", "AI", "∀E", "@E", "AE", "∃I", "3I", "EI", "3E", "∃E", "EE", "=I","=E","PR"])
                          case r of 
-                            r | r `elem` ["∀I","AI"] -> return [UI]
-                              | r `elem` ["∀E","AE"] -> return [UE]
-                              | r `elem` ["∃I","EI"] -> return [EI]
-                              | r `elem` ["∃E","EE"] -> return [EE1, EE2]
+                            r | r `elem` ["∀I","@I","AI"] -> return [UI]
+                              | r `elem` ["∀E","@E","AE"] -> return [UE]
+                              | r `elem` ["∃I","3I","EI"] -> return [EI]
+                              | r `elem` ["∃E","3E","EE"] -> return [EE1, EE2]
                               | r == "=I" -> return [IDI]
                               | r == "=E" -> return [IDE1,IDE2]
                               | r == "PR" -> return [Pr (problemPremises rtc)]
