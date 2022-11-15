@@ -14,8 +14,10 @@ jobs:
       - id: set-matrix
         run: |
           if [[ $GITHUB_REPOSITORY = 'Carnap/Carnap' ]]; then
-            echo '::set-output name=matrix::["self-hosted", "macos-10.15"]'
-            echo '::set-output name=docker_matrix::["self-hosted"]'
+            echo '::set-output name=matrix::["macos-10.15"]'
+            echo '::set-output name=docker_matrix::[]'
+            # echo '::set-output name=matrix::["self-hosted", "macos-10.15"]'
+            # echo '::set-output name=docker_matrix::["self-hosted"]'
           else
             echo '::set-output name=matrix::["macos-10.15"]'
             echo '::set-output name=docker_matrix::[]'
