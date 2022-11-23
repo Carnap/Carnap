@@ -24,7 +24,7 @@ import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PureFirstOrder.Util
-import Carnap.Languages.PurePropositional.Logic.Rules (premConstraint,axiom)
+import Carnap.Languages.PurePropositional.Logic.Rules (premConstraint, fitchAssumptionCheck, axiom)
 
 data LogicBookPD = SD LogicBookSD | UI | UE 
                  | EI | EE1 | EE2 
@@ -72,6 +72,26 @@ instance Inference LogicBookPD PureLexiconFOL (Form Bool) where
 
          isPremise (Pr _) = True
          isPremise _ = False
+
+         globalRestriction (Left ded) n (SD CondIntro1) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+         globalRestriction (Left ded) n (SD CondIntro2) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+         globalRestriction (Left ded) n (SD BicoIntro1) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (SD BicoIntro2) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (SD BicoIntro3) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (SD BicoIntro4) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (SD DisjElim1) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (SD DisjElim2) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (SD DisjElim3) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (SD DisjElim4) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (SD NegeElim1) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (SD NegeElim2) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (SD NegeElim3) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (SD NegeElim4) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (SD NegeIntro1) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (SD NegeIntro2) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (SD NegeIntro3) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (SD NegeIntro4) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction _ _ _ = Nothing
 
 parseLogicBookPD rtc = try quantRule <|> liftProp 
     where liftProp = do r <- parseLogicBookSD (defaultRuntimeDeductionConfig)
@@ -179,6 +199,26 @@ instance Inference LogicBookPDPlus PureLexiconFOL (Form Bool) where
          isPremise (PDtoPDP x) = isPremise x
          isPremise _ = False
 
+         globalRestriction (Left ded) n (PDtoPDP (SD CondIntro1)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+         globalRestriction (Left ded) n (PDtoPDP (SD CondIntro2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+         globalRestriction (Left ded) n (PDtoPDP (SD BicoIntro1)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (PDtoPDP (SD BicoIntro2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (PDtoPDP (SD BicoIntro3)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (PDtoPDP (SD BicoIntro4)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (PDtoPDP (SD DisjElim1)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (PDtoPDP (SD DisjElim2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (PDtoPDP (SD DisjElim3)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (PDtoPDP (SD DisjElim4)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (PDtoPDP (SD NegeElim1)) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDP (SD NegeElim2)) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDP (SD NegeElim3)) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDP (SD NegeElim4)) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDP (SD NegeIntro1)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDP (SD NegeIntro2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDP (SD NegeIntro3)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDP (SD NegeIntro4)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction _ _ _ = Nothing
+
 parseLogicBookPDPlus rtc = try liftPD <|> try liftProp <|> qn
     where liftPD = map PDtoPDP <$> parseLogicBookPD rtc
           liftProp =  map SDPlus <$> parseLogicBookSDPlus (defaultRuntimeDeductionConfig)
@@ -234,6 +274,26 @@ instance Inference LogicBookPDE PureLexiconFOL (Form Bool) where
          isPremise (PDtoPDE x) = isPremise x
          isPremise _ = False
 
+         globalRestriction (Left ded) n (PDtoPDE (SD CondIntro1)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+         globalRestriction (Left ded) n (PDtoPDE (SD CondIntro2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+         globalRestriction (Left ded) n (PDtoPDE (SD BicoIntro1)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (PDtoPDE (SD BicoIntro2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (PDtoPDE (SD BicoIntro3)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (PDtoPDE (SD BicoIntro4)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (PDtoPDE (SD DisjElim1)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (PDtoPDE (SD DisjElim2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (PDtoPDE (SD DisjElim3)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (PDtoPDE (SD DisjElim4)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (PDtoPDE (SD NegeElim1)) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDE (SD NegeElim2)) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDE (SD NegeElim3)) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDE (SD NegeElim4)) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDE (SD NegeIntro1)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDE (SD NegeIntro2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDE (SD NegeIntro3)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDtoPDE (SD NegeIntro4)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction _ _ _ = Nothing
+
 closedTerm :: [ClassicalSequentOver PureLexiconFOL (Term Int)] -> [Equation (ClassicalSequentOver PureLexiconFOL)] -> Maybe String
 closedTerm [] sub = Nothing
 closedTerm (x:xs) sub 
@@ -286,6 +346,26 @@ instance Inference LogicBookPDEPlus PureLexiconFOL (Form Bool) where
          isPremise (PDEtoPDEP x) = isPremise x
          isPremise (PDPtoPDEP x) = isPremise x
          isPremise _ = False
+
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD CondIntro1))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD CondIntro2))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD BicoIntro1))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD BicoIntro2))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD BicoIntro3))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD BicoIntro4))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD DisjElim1))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD DisjElim2))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD DisjElim3))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD DisjElim4))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD NegeElim1))) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD NegeElim2))) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD NegeElim3))) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD NegeElim4))) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD NegeIntro1))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD NegeIntro2))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD NegeIntro3))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction (Left ded) n (PDEtoPDEP (PDtoPDE (SD NegeIntro4))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+         globalRestriction _ _ _ = Nothing
 
 parseLogicBookPDEPlus rtc = try liftPDE <|> liftPDP
     where liftPDP = map PDPtoPDEP <$> parseLogicBookPDPlus rtc
