@@ -1,6 +1,6 @@
 {-#LANGUAGE RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.HuthAndRyan
-    (parseHuthAndRyanPropNK, HuthAndRyanPropNKCalc, HuthAndRyanPropNK()) where
+    (parseHuthAndRyanPropNK, huthAndRyanPropNKCalc, HuthAndRyanPropNK()) where
 
 import Text.Parsec
 import Data.List
@@ -214,8 +214,8 @@ instance AssumptionNumbers HuthAndRyanPropNK where
         dischargesAssumptions (OrEVac Nothing (Just m)) = [m]
         dischargesAssumptions _ = []
 
-HuthAndRyanPropNKCalc :: TableauCalc PurePropLexicon (Form Bool) HuthAndRyanPropNK
-HuthAndRyanPropNKCalc = mkTBCalc
+huthAndRyanPropNKCalc :: TableauCalc PurePropLexicon (Form Bool) HuthAndRyanPropNK
+huthAndRyanPropNKCalc = mkTBCalc
     { tbParseForm = purePropFormulaParser hardegreeOpts
     , tbParseRule = parseHuthAndRyanPropNK
     }
