@@ -19,6 +19,7 @@ module Carnap.Languages.PurePropositional.Logic
     , parseHurleySL, HurleySL, hurleySLCalc
     , parseGentzenPropNJ, GentzenPropNJ, gentzenPropNJCalc
     , parseGentzenPropNK, GentzenPropNK, gentzenPropNKCalc
+	, parseHuthAndRyanPropNK, HuthAndRyanPropNK, huthAndRyanPropNKCalc
     , ofPropSys, ofPropTreeSys, ofPropSeqSys
     ) where
 
@@ -46,6 +47,7 @@ import Carnap.Languages.PurePropositional.Logic.Hardegree
 import Carnap.Languages.PurePropositional.Logic.Hausman
 import Carnap.Languages.PurePropositional.Logic.HowardSnyder
 import Carnap.Languages.PurePropositional.Logic.Hurley
+import Carnap.Languages.PurePropositional.Logic.HuthAndRyan
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 import Carnap.Languages.PurePropositional.Logic.KalishAndMontague
 import Carnap.Languages.PurePropositional.Logic.Lande
@@ -114,6 +116,7 @@ ofPropTreeSys :: (forall r .
               TableauCalc PurePropLexicon (Form Bool) r -> a) -> String -> Maybe a
 ofPropTreeSys f sys | sys == "propNJ"                     = Just $ f gentzenPropNJCalc 
                     | sys == "propNK"                     = Just $ f gentzenPropNKCalc 
+                    | sys == "huthAndRyanNK"              = Just $ f huthAndRynPropNKCalc 
                     | sys == "openLogicNK"                = Just $ f olpPropNKCalc 
                     | otherwise                           = Nothing
 
