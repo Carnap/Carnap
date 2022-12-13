@@ -18,6 +18,7 @@ activate :: [Text] -> [(Text, Text)] -> Text -> Block
 activate cls extra chunk
     | "propNK" `elem` cls = template (opts [("system","propNK")])
     | "propNJ" `elem` cls = template (opts [("system","propNJ")])
+    | "huthAndRyanNK" `elem` cls = template (opts [("system","huthAndRyanNK")])
     | "openLogicNK" `elem` cls = template (opts [("system","openLogicNK")])
     | "openLogicFOLNK" `elem` cls = template (opts [("system","openLogicFOLNK")])
     | "openLogicSTNK" `elem` cls = template (opts [("system","openLogicSTNK")])
@@ -47,6 +48,7 @@ toPlayground :: [Text] -> [(Text, Text)] -> Text -> Block
 toPlayground cls extra contents
     | "propNK" `elem` cls = template (opts [("system","propNK")])
     | "propNJ" `elem` cls = template (opts [("system","propNJ")])
+    | "huthAndRyanNK" `elem` cls = template (opts [("system","huthAndRyanNK")])
     | "openLogicNK" `elem` cls = template (opts [("system","openLogicNK")])
     | "openLogicFOLNK" `elem` cls = template (opts [("system","openLogicFOLNK")])
     | "openLogicSTNK" `elem` cls = template (opts [("system","openLogicSTNK")])

@@ -53,6 +53,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.Hausman
                      , Carnap.Languages.PurePropositional.Logic.HowardSnyder
                      , Carnap.Languages.PurePropositional.Logic.Hurley
+                     , Carnap.Languages.PurePropositional.Logic.HuthAndRyan
                      , Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
                      , Carnap.Languages.PurePropositional.Logic.KalishAndMontague
                      , Carnap.Languages.PurePropositional.Logic.Lande
