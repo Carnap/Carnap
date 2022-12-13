@@ -26,7 +26,7 @@ data HuthAndRyanPropNK = AndI     | AndEL       | AndER
                    | OrERVac Int (Maybe Int)| OrEVac (Maybe Int) (Maybe Int)
                    | IfI Int  | IfIVac (Maybe Int)  | IfE
                    | NegI Int | NegIVac (Maybe Int) | NegE  | FalsumE
-				   | DNE | PBC | PBCVac| LEM | MT | DNI
+                   | DNE | PBC | PBCVac| LEM | MT | DNI
                    | As Int
                    | Pr
     deriving Eq
@@ -57,13 +57,13 @@ instance Show HuthAndRyanPropNK where
     show (NegIVac Nothing) = "¬I"
     show NegE = "¬E"
     show FalsumE = "⊥E"
-	show DNE = "¬¬E"
-	show (PBC n) = "PBC (" ++ show n ++ ")"
-	show (PBCVac (Just n)) = "PBC (" ++ show n ++ ")"
-	show (PBCVac Nothing) = "PBC"
+    show DNE = "¬¬E"
+    show (PBC n) = "PBC (" ++ show n ++ ")"
+    show (PBCVac (Just n)) = "PBC (" ++ show n ++ ")"
+    show (PBCVac Nothing) = "PBC"
     show LEM = "LEM"
-	show MT = "MT"
-	show DNI = "¬¬I"
+    show MT = "MT"
+    show DNI = "¬¬I"
     show (As n) = "(" ++ show n ++ ")"
     show Pr = "Pr"
 
@@ -80,8 +80,8 @@ parseHuthAndRyanPropNK rtc = choice . map try $
                         , stringOpts ["⊥E","XE"] >> return [FalsumE]
                         , stringOpts ["¬¬E","--E"] >> return [DNE]
                         , stringOpts ["¬¬I","--I"] >> return [DNI]
-						, string "LEM" >> return [LEM]
-						, string "MT" >> return [MT]
+                        , string "LEM" >> return [LEM]
+                        , string "MT" >> return [MT]
                         , char '(' *> many1 digit <* char ')' 
                             >>= \s -> return [As (read s :: Int)]
                         , (stringOpts ["->I", ">I","⊃I"] *> spaces *> char '(' *> many1 digit <* char ')') 
@@ -130,11 +130,11 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRuleOf (NegIVac _) = constructiveFalsumReductioVariations !! 1
          coreRuleOf NegE = falsumIntroduction
          coreRuleOf FalsumE = falsumElimination
-		 coreRuleOf DNE = doubleNegationElimination
-		 coreRuleOf DNI = doubleNegationIntroduction
-         coreRuleOf (PBC _) = nonConstructiveFalsumReductioVariations !! 0 
+         coreRuleOf DNE = doubleNegationElimination
+         coreRuleOf DNI = doubleNegationIntroduction
+         coreRuleOf (PBC _) = nonConstructiveFalsumReductioVariations !! 0
          coreRuleOf (PBCVac _) = nonConstructiveFalsumReductioVariations !! 1
-		 coreRuleOf MT = modusTollens
+         coreRuleOf MT = modusTollens
          coreRuleOf LEM = [] ∴ Top :|-: SS (phin 1 .\/. (lneg $ phin 1))
          coreRuleOf (As _) = axiom
          coreRuleOf Pr = axiom
