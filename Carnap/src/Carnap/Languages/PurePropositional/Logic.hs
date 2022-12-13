@@ -103,31 +103,31 @@ ofPropSys f sys | sys == "LogicBookSD"                   = Just $ f logicBookSDC
                 | sys == "thomasBolducAndZachTFL2019"    = Just $ f thomasBolducAndZachTFL2019Calc
                 | sys == "thomasBolducAndZachTFLCore"    = Just $ f thomasBolducAndZachTFLCoreCalc
                 | sys == "tomassiPL"                     = Just $ f tomassiPLCalc
-                | sys == "winklerTFL"                    = Just $ f winklerTFLCalc 
+                | sys == "winklerTFL"                    = Just $ f winklerTFLCalc
                 | sys == "zachPropEq"                    = Just $ f zachPropEqCalc
                 | otherwise                              = Nothing
 
-ofPropTreeSys :: (forall r . 
+ofPropTreeSys :: (forall r .
                     ( Show r
                     , Inference r PurePropLexicon (Form Bool)
                     , StructuralInference r PurePropLexicon (ProofTree r PurePropLexicon (Form Bool))
                     , StructuralOverride r (ProofTree r PurePropLexicon (Form Bool))
-                 ) => 
+                 ) =>
               TableauCalc PurePropLexicon (Form Bool) r -> a) -> String -> Maybe a
-ofPropTreeSys f sys | sys == "propNJ"                     = Just $ f gentzenPropNJCalc 
-                    | sys == "propNK"                     = Just $ f gentzenPropNKCalc 
-                    | sys == "huthAndRyanNK"              = Just $ f huthAndRynPropNKCalc 
-                    | sys == "openLogicNK"                = Just $ f olpPropNKCalc 
+ofPropTreeSys f sys | sys == "propNJ"                     = Just $ f gentzenPropNJCalc
+                    | sys == "propNK"                     = Just $ f gentzenPropNKCalc
+                    | sys == "huthAndRyanNK"              = Just $ f huthAndRyanPropNKCalc
+                    | sys == "openLogicNK"                = Just $ f olpPropNKCalc
                     | otherwise                           = Nothing
 
-ofPropSeqSys :: (forall r . 
+ofPropSeqSys :: (forall r .
                     ( Show r
                     , CoreInference r PurePropLexicon (Form Bool)
                     , SpecifiedUnificationType r
-                 ) => 
+                 ) =>
               TableauCalc PurePropLexicon (Form Bool) r -> a) -> String -> Maybe a
-ofPropSeqSys f sys | sys == "propLJ"                     = Just $ f gentzenPropLJCalc 
-                   | sys == "propLK"                     = Just $ f gentzenPropLKCalc 
-                   | sys == "openLogicPropLK"            = Just $ f olpPropLKCalc 
-                   | sys == "openLogicPropLJ"            = Just $ f olpPropLJCalc 
+ofPropSeqSys f sys | sys == "propLJ"                     = Just $ f gentzenPropLJCalc
+                   | sys == "propLK"                     = Just $ f gentzenPropLKCalc
+                   | sys == "openLogicPropLK"            = Just $ f olpPropLKCalc
+                   | sys == "openLogicPropLJ"            = Just $ f olpPropLJCalc
                    | otherwise                           = Nothing
