@@ -26,7 +26,7 @@ data HuthAndRyanPropNK = AndI     | AndEL       | AndER
                    | OrERVac Int (Maybe Int)| OrEVac (Maybe Int) (Maybe Int)
                    | IfI Int  | IfIVac (Maybe Int)  | IfE
                    | NegI Int | NegIVac (Maybe Int) | NegE  | FalsumE
-                   | DNE | PBC | PBCVac| LEM | MT | DNI
+                   | DNE | PBC Int | PBCVac (Maybe Int) | LEM | MT | DNI
                    | As Int
                    | Pr
     deriving Eq
