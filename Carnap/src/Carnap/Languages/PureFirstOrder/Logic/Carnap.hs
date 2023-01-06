@@ -1,6 +1,6 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.Carnap
-        (FOLogic(..), parseFOLogic, folCalc)
+        (FOLogic(..), parseFOLogic, folCalc, folCalcNonC)
     where
 
 import Data.Map as M (lookup, Map,empty)
@@ -9,7 +9,7 @@ import Carnap.Core.Unification.Unification (applySub)
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
-import Carnap.Languages.PurePropositional.Logic.Carnap 
+import Carnap.Languages.PurePropositional.Logic.Carnap hiding (PR,DER)
 import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -18,19 +18,23 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
-import Carnap.Languages.PurePropositional.Logic.Rules (axiom,premConstraint)
+import Carnap.Languages.PurePropositional.Logic.Rules (axiom,premConstraint, nonConstructiveReductioVariations)
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 
 --------------------------------------------------------
 --2. Classical First-Order Logic
 --------------------------------------------------------
 
-data FOLogic =  SL PropLogic
-                | UD  | UI  | EG  | ED1 | ED2 | QN1 | QN2  | QN3  | QN4  
-                | LL1 | LL2 | EL1 | EL2 | ID  | SM  | ALL1 | ALL2
-                | DER String (ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))
-                | PR (Maybe [(ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))])
-               deriving (Eq)
+data FOLogic = SL PropLogic
+             | UD  | UI  | EG  | ED1 | ED2 | QN1 | QN2  | QN3  | QN4  
+             | LL1 | LL2 | EL1 | EL2 | ID  | SM  | ALL1 | ALL2
+             | DER String (ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))
+             | PR (Maybe [(ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))])
+             deriving (Eq)
+
+data FOLogicNonC = NonC FOLogic
+                 | ID5 | ID6  | ID7  | ID8
+                 deriving (Eq)
 
 instance Show FOLogic where
         show (PR _)  = "PR"
@@ -54,6 +58,10 @@ instance Show FOLogic where
         show SM      = "Sm"
         show (SL x)  = show x
 
+instance Show FOLogicNonC where
+        show (NonC x) = show x
+        show _ = "NC"
+
 instance Inference FOLogic PureLexiconFOL (Form Bool) where
      ruleOf (PR _)    = axiom
      ruleOf UI        = universalInstantiation
@@ -73,6 +81,7 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
      ruleOf EL2       = euclidsLawVariations !! 1
      ruleOf ID        = eqReflexivity
      ruleOf SM        = eqSymmetry
+     ruleOf x@(SL _)  = premisesOf x ∴ conclusionOf x
 
      premisesOf (SL x) = map liftSequent (premisesOf x)
      premisesOf (DER _ r) = multiCutLeft r
@@ -92,6 +101,25 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
      indirectInference x
         | x `elem` [ ED1,ED2,UD ] = Just PolyProof
         | otherwise = Nothing
+
+instance Inference FOLogicNonC PureLexiconFOL (Form Bool) where
+     ruleOf ID5       = nonConstructiveReductioVariations !! 0
+     ruleOf ID6       = nonConstructiveReductioVariations !! 1
+     ruleOf ID7       = nonConstructiveReductioVariations !! 2
+     ruleOf ID8       = nonConstructiveReductioVariations !! 3
+     ruleOf (NonC x)  = ruleOf x
+
+     premisesOf (NonC (DER _ r))  = multiCutLeft r
+     premisesOf x                 = upperSequents (ruleOf x)
+
+     conclusionOf (NonC (DER _ r))  = multiCutRight r
+     conclusionOf x                 = lowerSequent (ruleOf x)
+
+     restriction (NonC x) = restriction x
+     restriction _ = Nothing
+
+     indirectInference (NonC x) = indirectInference x
+     indirectInference _ = Just PolyProof
 
 parseFOLogic :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [FOLogic]
 parseFOLogic rtc = try quantRule <|> liftProp
@@ -113,12 +141,27 @@ parseFOLogic rtc = try quantRule <|> liftProp
                                                     Just r  -> return [DER rn r]
                                                     Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
+
+parseFOLogicNonC :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [FOLogicNonC]
+parseFOLogicNonC rtc = indirect <|> (map NonC <$> parseFOLogic rtc)
+    where indirect = string "ID" >> return [NonC (SL ID1), NonC (SL ID2), NonC (SL ID3), NonC (SL ID4), ID5, ID6, ID7, ID8]
+
 parseFOLProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
 parseFOLProof ders = toDeductionMontague (parseFOLogic ders) folFormulaParser
+
+parseFOLNonCProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine FOLogicNonC PureLexiconFOL (Form Bool)]
+parseFOLNonCProof ders = toDeductionMontague (parseFOLogicNonC ders) folFormulaParser
 
 folCalc = mkNDCalc
     { ndRenderer = MontagueStyle
     , ndParseProof = parseFOLProof
+    , ndProcessLine = hoProcessLineMontague
+    , ndProcessLineMemo = Just hoProcessLineMontagueMemo
+    }
+
+folCalcNonC = mkNDCalc
+    { ndRenderer = MontagueStyle
+    , ndParseProof = parseFOLNonCProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
     }

@@ -97,6 +97,7 @@ ofPropSys f sys | sys == "LogicBookSD"                   = Just $ f logicBookSDC
                 | sys == "montagueSC"                    = Just $ f montagueSCCalc
                 | sys == "prop"                          = Just $ f propCalc
                 | sys == "propStrict"                    = Just $ f propCalcStrict
+                | sys == "propNonC"                      = Just $ f propCalcNonC
                 | sys == "propNL"                        = Just $ f propCalcNL
                 | sys == "propNLStrict"                  = Just $ f propCalcNLStrict
                 | sys == "thomasBolducAndZachTFL"        = Just $ f thomasBolducAndZachTFLCalc

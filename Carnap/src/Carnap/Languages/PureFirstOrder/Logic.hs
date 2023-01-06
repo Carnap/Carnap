@@ -68,6 +68,7 @@ ofFOLSys f sys | sys == "LogicBookPD"                     = Just $ f logicBookPD
                | sys == "davisQL"                         = Just $ f davisQLCalc
                | sys == "ebelsDugganFOL"                  = Just $ f ebelsDugganFOLCalc
                | sys == "firstOrder"                      = Just $ f folCalc
+               | sys == "firstOrderNonC"                  = Just $ f folCalcNonC
                | sys == "gallowPL"                        = Just $ f gallowPLCalc
                | sys == "gallowPLPlus"                    = Just $ f gallowPLPlusCalc
                | sys == "gamutND"                         = Just $ f gamutNDCalc

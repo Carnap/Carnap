@@ -1,6 +1,8 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Carnap
-    (parsePropLogic,  parsePropLogicProof, PropLogic, propCalc, propCalcStrict, propCalcNL, propCalcNLStrict, propTreeCalc) where
+    ( parsePropLogic,  parsePropLogicProof, PropLogic(..)
+    , propCalc, propCalcStrict, propCalcNonC, propCalcNL, propCalcNLStrict, propTreeCalc
+    ) where
 import Data.Map as M (lookup, Map)
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
@@ -22,6 +24,11 @@ data PropLogic = PR (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form
                | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
                | DER String (ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))
                deriving (Eq)
+
+--a variant with non-constructive reductio
+data PropLogicNonC = NonC PropLogic
+    | ID5 | ID6  | ID7  | ID8
+    deriving (Eq)
 
 instance Show PropLogic where
         show MP      = "MP"
@@ -48,6 +55,9 @@ instance Show PropLogic where
         show CB      = "CB"
         show (PR _)  = "PR"
         show (DER s _) = "D-" ++ s
+
+instance Show PropLogicNonC where
+        show (NonC x) = show x
 
 instance Inference PropLogic PurePropLexicon (Form Bool) where
     ruleOf MP        = modusPonens
@@ -87,6 +97,25 @@ instance Inference PropLogic PurePropLexicon (Form Bool) where
         | x `elem` [DD,CP1,CP2,ID1,ID2,ID3,ID4] = Just PolyProof
         | otherwise = Nothing
 
+instance Inference PropLogicNonC PurePropLexicon (Form Bool) where
+    ruleOf ID5              = nonConstructiveReductioVariations !! 0
+    ruleOf ID6              = nonConstructiveReductioVariations !! 1
+    ruleOf ID7              = nonConstructiveReductioVariations !! 2
+    ruleOf ID8              = nonConstructiveReductioVariations !! 3
+    ruleOf (NonC x)         = ruleOf x
+
+    premisesOf (NonC (DER _ r)) = multiCutLeft r
+    premisesOf r = upperSequents (ruleOf r)
+
+    conclusionOf (NonC (DER _ r)) = multiCutRight r
+    conclusionOf r = lowerSequent (ruleOf r)
+
+    restriction (NonC x) = restriction x
+    restriction _ = Nothing
+
+    indirectInference (NonC x) = indirectInference x
+    indirectInference _ = Just PolyProof
+
 parsePropLogic :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [PropLogic]
 parsePropLogic rtc = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","DD","DNE","DNI", "DN", "S", "ADJ",  "ADD" , "BC", "CB",  "CD", "ID", "D-"])
                         case r of
@@ -111,9 +140,17 @@ parsePropLogic rtc = do r <- choice (map (try . string) ["AS","PR","MP","MTP","M
                                             Just r  -> return [DER rn r]
                                             Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
+parsePropNonCLogic :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [PropLogicNonC]
+parsePropNonCLogic rtc = indirect <|> (map NonC <$> parsePropLogic rtc)
+    where indirect = string "ID" >> return [NonC ID1,NonC ID2, NonC ID3, NonC ID4, ID5, ID6, ID7, ID8]
+
 parsePropLogicProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) 
                      -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
 parsePropLogicProof rtc = toDeductionMontague (parsePropLogic rtc) (purePropFormulaParser standardLetters)
+
+parsePropLogicNonCProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) 
+                     -> String -> [DeductionLine PropLogicNonC PurePropLexicon (Form Bool)]
+parsePropLogicNonCProof rtc = toDeductionMontague (parsePropNonCLogic rtc) (purePropFormulaParser standardLetters)
 
 parsePropLogicProofStrict :: RuntimeDeductionConfig PurePropLexicon (Form Bool) 
                      -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
@@ -128,6 +165,13 @@ parsePropLogicProofNLStrict rtc = toDeductionMontague (parsePropLogic rtc) engli
 propCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parsePropLogicProof
+    , ndProcessLine = processLineMontague
+    , ndProcessLineMemo = Nothing
+    }
+
+propCalcNonC = mkNDCalc
+    { ndRenderer = MontagueStyle
+    , ndParseProof = parsePropLogicNonCProof
     , ndProcessLine = processLineMontague
     , ndProcessLineMemo = Nothing
     }
