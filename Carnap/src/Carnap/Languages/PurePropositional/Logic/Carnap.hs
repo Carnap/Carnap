@@ -58,6 +58,7 @@ instance Show PropLogic where
 
 instance Show PropLogicNonC where
         show (NonC x) = show x
+        show _ = "ID"
 
 instance Inference PropLogic PurePropLexicon (Form Bool) where
     ruleOf MP        = modusPonens
