@@ -151,8 +151,11 @@ createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
                      && and (map (unform . satisfies v) succedList)
           atomIndicies = nub . sortIdx . concatMap getIndicies $ forms
           valuations = map toValuation . subsequences $ reverse atomIndicies
+          turnStile | "double-turnstile" `inOpts` opts = [[Left '⊨']]
+                    | "negated-double-turnstile" `inOpts` opts = [[Left '⊭']]
+                    | otherwise = [[Left '⊢']]
           orderedChildren = concat $ intersperse [Left ','] (map (toOrderedChildren . fromSequent) (toListOf concretes antced))
-                                  ++ (if "double-turnstile" `inOpts` opts then [[Left '⊨']] else [[Left '⊢']])
+                                  ++ turnStile
                                   ++ intersperse [Left ','] (map (toOrderedChildren. fromSequent) (toListOf concretes succed))
           isPlural = length succedList > 1
 
@@ -275,7 +278,7 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
           toChildTd :: (Either Char PureForm, Int, Maybe Bool) -> IO Element
           toChildTd (c,m,mg) = do Just td <- createElement w (Just "td")
                                   case c of
-                                      Left c' | c' `elem` ['⊢','⊨'] -> case mvalid of
+                                      Left c' | c' `elem` ['⊢','⊨','⊭'] -> case mvalid of
                                                    Just tv -> addDropdown ("turnstilemark" `inOpts` opts) m td tv mg
                                                    Nothing -> setInnerHTML td (Just "")
                                       Left c'  -> setInnerHTML td (Just "")
@@ -485,7 +488,7 @@ toChildTh :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => Docume
 toChildTh w c = 
         do Just th <- createElement w (Just "th")
            case c of
-               Left c'  -> do if c' `elem` ['⊢','⊨'] 
+               Left c'  -> do if c' `elem` ['⊢','⊨','⊭'] 
                                   then setAttribute th "class" "ttTurstile" 
                                   else return ()
                               setInnerHTML th (Just [c'])
@@ -557,6 +560,7 @@ expandRow :: [Either Char b] -> [Maybe Bool] ->  [Maybe Bool]
 expandRow (Right y:ys)  (x:xs)  = x : expandRow ys xs 
 expandRow (Left '⊢':ys) (x:xs)  = x : expandRow ys xs 
 expandRow (Left '⊨':ys) (x:xs)  = x : expandRow ys xs 
+expandRow (Left '⊭':ys) (x:xs)  = x : expandRow ys xs 
 expandRow (Left y:ys) xs  = Nothing : expandRow ys xs
 expandRow [] (x:xs)       = Nothing : expandRow [] xs
 expandRow _ _ = []
@@ -565,6 +569,7 @@ contractRow :: [Either Char b] -> [Maybe Bool] ->  [Maybe Bool]
 contractRow (Right y:ys)  (x:xs)  = x : contractRow ys xs 
 contractRow (Left '⊢':ys) (x:xs)  = x : contractRow ys xs 
 contractRow (Left '⊨':ys) (x:xs)  = x : contractRow ys xs 
+contractRow (Left '⊭':ys) (x:xs)  = x : contractRow ys xs 
 contractRow (Left y:ys) (x:xs)  = contractRow ys xs
 contractRow [] (x:xs)       = contractRow [] xs
 contractRow _ _ = []
