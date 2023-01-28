@@ -1,5 +1,5 @@
 module Carnap.GHCJS.SharedFunctions
-        (simpleCipher, simpleDecipher, simpleHash, inOpts,rewriteWith)
+        (simpleCipher, simpleDecipher, simpleHash, inOpts, rewriteWith)
     where
 
 import Data.Bits (xor)
@@ -20,9 +20,9 @@ rewriteWith opts = case rewriter of
                        Nothing -> turnstileHandler
     where rewriter = (M.lookup "system" opts >>= ofPropSys ndNotation)
              `mplus` (M.lookup "system" opts >>= ofFOLSys ndNotation)
-          turnstileHandler = if "double-turnstile" `inOpts` opts 
-                                 then map (\c -> if c == '⊢' then '⊨' else c)
-                                 else id
+          turnstileHandler | "double-turnstile" `inOpts` opts = map (\c -> if c == '⊢' then '⊨' else c)
+                           | "negated-double-turnstile" `inOpts` opts = map (\c -> if c == '⊢' then '⊭' else c)
+                           | otherwise = id
 
 simpleCipher :: String -> [Int]
 simpleCipher x =  spliceWithWallis (map fromEnum x)
