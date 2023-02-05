@@ -53,7 +53,7 @@ pierceTheorem = [st|
   (P->Q)->P     :A/CI
      -P         :A/~E
         P       :A/CI
-          Q     :A/~E
+          ~Q    :A/~E
           P     :3 R
           -P    :2 R
         Q       :4-6 -E
