@@ -151,6 +151,16 @@ polyadicUniversalDerivation n = [ GammaV 1 :|-: ss' (schematicContextScheme n)]
 
 polyadicExistentialGeneralization n = [ GammaV 1 :|-: ss' (schematicContextScheme n)]
                                       ∴ GammaV 1 :|-: ss' (existentialScheme n)
+                                      
+--XXX this duplicates polyadic universal derivation, but has a different
+--intention; keeping them seperate just in case for some reason one needs
+--to be changed separately
+polyadicUniversalGeneralization n = [ GammaV 1 :|-: ss' (schematicContextScheme n)]
+                                    ∴ GammaV 1 :|-: ss' (universalScheme n)
+
+polyadicConditionalExistentialDerivation n = [ GammaV 1 :|-: ss' (existentialScheme n)
+                                             , GammaV 2 :|-: ss' (schematicContextScheme n .→. phin 1)
+                                             ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
 
 ---------------------------------
 --  1.3 Rules With Variations  --

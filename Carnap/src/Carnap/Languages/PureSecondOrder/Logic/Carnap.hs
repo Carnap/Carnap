@@ -1,4 +1,3 @@
-
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureSecondOrder.Logic.Carnap (psolCalc, msolCalc) where
 

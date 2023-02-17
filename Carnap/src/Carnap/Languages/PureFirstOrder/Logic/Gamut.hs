@@ -49,11 +49,11 @@ data GamutNDPlus = NDP GamutPNDPlus
     deriving Eq
 
 instance Show GamutNDCore where
-        show InE = "I∃"
-        show ElimE = "E∃"
-        show InA = "I∀"
-        show ElimA = "E∀"
-        show InEq = "I="
+        show InE     = "I∃"
+        show ElimE   = "E∃"
+        show InA     = "I∀"
+        show ElimA   = "E∀"
+        show InEq    = "I="
         show ElimEq1 = "E="
         show ElimEq2 = "E="
 

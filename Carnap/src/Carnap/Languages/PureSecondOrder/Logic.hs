@@ -4,6 +4,7 @@ module Carnap.Languages.PureSecondOrder.Logic (psolCalc, msolCalc, ofSecondOrder
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Languages.PureSecondOrder.Syntax
 import Carnap.Languages.PureSecondOrder.Logic.Carnap
+import Carnap.Languages.PureSecondOrder.Logic.Gamut
 
 --TODO: Cleanup SOL data types so we can get a more specific type here.
 ofSecondOrderSys :: (forall r sem lex . 
@@ -12,4 +13,5 @@ ofSecondOrderSys :: (forall r sem lex .
       -> Maybe a
 ofSecondOrderSys f sys | sys == "secondOrder"             = Just $ f msolCalc 
                        | sys == "polyadicSecondOrder"     = Just $ f psolCalc
+                       | sys == "gamutSecondOrder"        = Just $ f gamutNDSOLCalc
                        | otherwise                        = Nothing
