@@ -5,7 +5,7 @@ import Carnap.Core.Data.Types
 import Carnap.Languages.PureSecondOrder.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConstructors
-import Carnap.Languages.PurePropositional.Logic.Rules (axiom, premConstraint)
+import Carnap.Languages.PurePropositional.Logic.Rules (premConstraint)
 import Carnap.Languages.PureFirstOrder.Logic.Rules (notAssumedConstraint)
 import Carnap.Languages.PureFirstOrder.Logic (GamutNDCore(..), GamutNDPlus(CoreP), parseGamutNDPlus)
 import Carnap.Languages.PureSecondOrder.Parser

@@ -13,5 +13,5 @@ ofSecondOrderSys :: (forall r sem lex .
       -> Maybe a
 ofSecondOrderSys f sys | sys == "secondOrder"             = Just $ f msolCalc 
                        | sys == "polyadicSecondOrder"     = Just $ f psolCalc
-                       | sys == "gamutSecondOrder"        = Just $ f gamutNDSOLCalc
+                       | sys == "gamutNDSOL"              = Just $ f gamutNDSOLCalc
                        | otherwise                        = Nothing
