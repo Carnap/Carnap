@@ -301,6 +301,16 @@ psolVarHead ((SOPApp SOApp) :!$: v) =
 psolVarHead (x :!$: _) = psolVarHead x
 psolVarHead v = False
 
+
+--Determine whether a formula is a simple predication with a polyadic variable head
+extractPsolVarHead :: (Typeable a) => (forall b . PolyadicallySOL b -> c) -> PolyadicallySOL a -> Maybe c
+extractPsolVarHead f ((SOPApp SOApp) :!$: v) = 
+        case preview _polyVarIdxSOL v of
+               Just _ -> Just $ f v
+               Nothing -> extractPsolVarHead f v
+extractPsolVarHead f (x :!$: _) = extractPsolVarHead f x
+extractPsolVarHead f v = Nothing
+
 msolVarHead :: MonadicallySOL a -> Bool
 msolVarHead ((SOMApp SOApp) :!$: x) = msolVarHead x
 msolVarHead (x :!$: _) = msolVarHead x

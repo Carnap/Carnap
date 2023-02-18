@@ -60,11 +60,11 @@ eigenConstraint c suc ant sub
           suc' = applySub sub suc
 
 sopredicateEigenConstraint c suc ant sub
-    | c' `occurs` ant' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
-    | c' `occurs` suc' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
+    | c' `occurs` ant' = Just $ "The predicate variable " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
+    | c' `occurs` suc' = Just $ "The predicate variable " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
     | otherwise = if msolVarHead (fromSequent c') 
                       then Nothing
-                      else Just $ "the expression " ++ show c' ++ " appears not to be a variable predication."
+                      else Just $ "the expression " ++ show c' ++ " appears not to be a predicate variable."
 
     where c'   = applySub sub c
           ant' = applySub sub ant
@@ -72,16 +72,18 @@ sopredicateEigenConstraint c suc ant sub
           -- XXX : this is not the most efficient way of checking
           -- imaginable.
 
-psopredicateEigenConstraint c suc ant sub
-    | c' `occurs` ant' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
-    | c' `occurs` suc' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
-    | otherwise = if psolVarHead (fromSequent c') 
-                      then Nothing
-                      else Just $ "the expression " ++ show c' ++ " appears not to be a predicate."
-
+psopredicateEigenConstraint c suc ant sub = case extractPsolVarHead doCheck (fromSequent c') of
+    Nothing -> Just $ "the expression " ++ show c' ++ " appears not to be a variable predication."
+    Just rslt -> rslt
     where c'   = applySub sub c
           ant' = applySub sub ant
           suc' = applySub sub suc
+          doCheck :: PolyadicallySOL b -> Maybe String
+          doCheck v
+             | v' `occurs` ant' = Just $ "The predicate variable " ++ show v ++ " appears not to be fresh, given that this line relies on " ++ show ant'
+             | v' `occurs` suc' = Just $ "The predicate variable " ++ show v ++ " appears not to be fresh in the other premise " ++ show suc'
+             | otherwise = Nothing
+             where v' = liftToSequent v
 
 -------------------------------------------
 --  1.2 Polyadically Second Order Logic  --
