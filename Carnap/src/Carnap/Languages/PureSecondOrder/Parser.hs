@@ -1,10 +1,13 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses#-}
 module Carnap.Languages.PureSecondOrder.Parser
-        (msolFormulaParser,psolFormulaParser)
+        (msolFormulaParser, psolFormulaParser, gamutFormulaParser)
     where
 
 import Carnap.Core.Data.Types
 import Carnap.Languages.PureFirstOrder.Syntax (foVar)
+import Carnap.Languages.PureFirstOrder.Parser (parseFreeVar)
+import Carnap.Languages.PurePropositional.Util (isBooleanBinary)
+import Carnap.Languages.PurePropositional.Parser (standardOpTable, gamutOpTable)
 import Carnap.Languages.PureSecondOrder.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses (StandardVarLanguage, BooleanLanguage, IndexedPropLanguage(..), QuantLanguage(..), PolyadicPredicateLanguage(..), TypedLambdaLanguage(..))
@@ -15,13 +18,16 @@ import Text.Parsec.Expr
 import Data.List (elemIndex)
 
 msolFormulaParser :: Parsec String u (MonadicallySOL (Form Bool))
-msolFormulaParser = buildExpressionParser opTable subFormulaParserMSOL 
+msolFormulaParser = buildExpressionParser standardOpTable subFormulaParserMSOL 
 
 instance ParsableLex (Form Bool) MonadicallySOLLex where
         langParser = msolFormulaParser
 
 psolFormulaParser :: Parsec String u (PolyadicallySOL (Form Bool))
-psolFormulaParser = buildExpressionParser opTablePSOL subFormulaParserPSOL 
+psolFormulaParser = buildExpressionParser standardOpTable subFormulaParserPSOL 
+
+gamutFormulaParser :: Parsec String u (PolyadicallySOL (Form Bool))
+gamutFormulaParser = buildExpressionParser gamutOpTable subFormulaParserGamut 
 
 instance ParsableLex (Form Bool) PolyadicallySOLLex where
         langParser = psolFormulaParser
@@ -30,28 +36,49 @@ subFormulaParserMSOL = coreParserMSOL msolFormulaParser subFormulaParserMSOL
 
 subFormulaParserPSOL = coreParserPSOL psolFormulaParser subFormulaParserPSOL
 
+subFormulaParserGamut = coreParserGamut gamutFormulaParser subFormulaParserGamut
+
 coreParserMSOL recur sfrecur = (parenParser recur <* spaces)
-      <|> try (quantifiedSentenceParser parseFreeVar sfrecur)
+      <|> try (quantifiedSentenceParser (parseFreeVar firstOrderVars) sfrecur)
       <|> try (quantifiedSentenceParser parseMSOLVar sfrecur)
-      <|> try (sentenceLetterParser "PQRSTUVW" <* spaces)
-      <|> try (msolpredicationParser recur parseSimpleFOTerm)
+      <|> try (sentenceLetterParser sentenceLetters <* spaces)
+      <|> try (msolpredicationParser firstOrderVars recur parseFOTerm)
       <|> unaryOpParser [parseNeg] sfrecur
+      where
+        firstOrderVars = ['v'..'z']
+        firstOrderConstants = ['a'..'e']
+        sentenceLetters = ['P'..'W']
+        parseFOTerm = parseSimpleFOTerm firstOrderVars firstOrderConstants
 
 coreParserPSOL recur sfrecur = (parenParser recur <* spaces)
-      <|> try (quantifiedSentenceParser parseFreeVar sfrecur)
+      <|> try (quantifiedSentenceParser (parseFreeVar firstOrderVars) sfrecur)
       <|> try (quantifiedSentenceParserPSOL sfrecur)
-      <|> try (sentenceLetterParser "PQRSTUVW" <* spaces)
-      <|> try (psolPredicationParser recur parseSimpleFOTermPSOL)
+      <|> try (sentenceLetterParser sentenceLetters <* spaces)
+      <|> try (psolPredicationParser firstOrderVars predicateSymbols recur parseFOTerm)
       <|> unaryOpParser [parseNeg] sfrecur
+      where
+        firstOrderVars = ['v'..'z']
+        firstOrderConstants = ['a'..'e']
+        sentenceLetters = ['P'..'W']
+        predicateSymbols = ['F'..'O']
+        parseFOTerm = parseSimpleFOTermPSOL firstOrderVars firstOrderConstants
 
-parseFreeVar :: StandardVarLanguage (FixLang lex (Term Int)) => Parsec String u (FixLang lex (Term Int))
-parseFreeVar = choice [try $ do c <- oneOf "vwxyz" 
-                                char '_'
-                                dig <- many1 digit
-                                return $ foVar $ [c] ++ "_" ++ dig
-                      ,      do c <- oneOf "vwxyz"
-                                return $ foVar [c]
-                      ]
+coreParserGamut recur sfrecur = (gamutParens <* spaces)
+      <|> try (quantifiedSentenceParser (parseFreeVar firstOrderVars) sfrecur)
+      <|> try (quantifiedSentenceParserPSOL sfrecur)
+      <|> try (sentenceLetterParser sentenceLetters <* spaces)
+      <|> try (psolPredicationParser firstOrderVars predicateSymbols recur parseFOTerm)
+      <|> try (equalsParser parseFOTerm)
+      <|> try (booleanConstParser <* spaces)
+      <|> unaryOpParser [parseNeg] sfrecur
+      where
+        firstOrderVars = ['s'..'z']
+        firstOrderConstants = ['a'..'r']
+        sentenceLetters = []
+        predicateSymbols = ['A'..'Z']
+        parseFOTerm = parseSimpleFOTermPSOL firstOrderVars firstOrderConstants
+        gamutParens = (wrappedWith '(' ')' recur <|> wrappedWith '[' ']' recur) >>= boolean
+        boolean a = if isBooleanBinary a then return a else unexpected "atomic, negated, or quantified sentence wrapped in parentheses"
 
 parseMSOLVar :: Parsec String u (MonadicallySOL (Form (Int -> Bool)))
 parseMSOLVar = choice [try $ do c <- oneOf "XYZ"
@@ -77,16 +104,11 @@ quantifiedSentenceParserPSOL formulaParser = do
         return $ (iterate incQuant initForm !! arityInt)
     where initArity = AZero :: Arity Int Bool Bool
 
-parseSimpleFOTerm :: Parsec String u (MonadicallySOL (Term Int))
-parseSimpleFOTerm = try (parseConstant "abcde") <|> parseFreeVar
+parseSimpleFOTerm :: [Char] -> [Char] -> Parsec String u (MonadicallySOL (Term Int))
+parseSimpleFOTerm firstOrderVars firstOrderConstants = try (parseConstant firstOrderConstants) <|> parseFreeVar firstOrderVars
 
-parseSimpleFOTermPSOL :: Parsec String u (PolyadicallySOL (Term Int))
-parseSimpleFOTermPSOL = try (parseConstant "abcde") <|> parseFreeVar
-
-parseComplexFOLTerm :: Parsec String u (MonadicallySOL (Term Int)) 
-parseComplexFOLTerm = try (parseConstant "abcde")
-                      <|> parseFreeVar
-                      <|> parseFunctionSymbol "fgh" parseComplexFOLTerm
+parseSimpleFOTermPSOL :: [Char] -> [Char] -> Parsec String u (PolyadicallySOL (Term Int))
+parseSimpleFOTermPSOL firstOrderVars firstOrderConstants = try (parseConstant firstOrderConstants) <|> parseFreeVar firstOrderVars
 
 opTable :: Monad m => [[Operator String u m (MonadicallySOL (Form Bool))]]
 opTable = [[ Prefix (try parseNeg)], 
@@ -98,23 +120,26 @@ opTablePSOL = [[ Prefix (try parseNeg)],
               [Infix (try parseOr) AssocLeft, Infix (try parseAnd) AssocLeft],
               [Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]]
 
-msolpredicationParser :: Parsec String u  (MonadicallySOL (Form Bool)) -> Parsec String u  (MonadicallySOL (Term Int)) 
+msolpredicationParser :: [Char] -> Parsec String u  (MonadicallySOL (Form Bool)) -> Parsec String u  (MonadicallySOL (Term Int)) 
     -> Parsec String u (MonadicallySOL (Form Bool))
-msolpredicationParser parseForm parseTerm = try (parsePredicateSymbol "FGHIJKLMNO" parseTerm) <|> parseVarApp <|> parseLamApp parseForm parseTerm
+msolpredicationParser firstOrderVars parseForm parseTerm = 
+        try (parsePredicateSymbol "FGHIJKLMNO" parseTerm) 
+        <|> parseVarApp 
+        <|> parseLamApp firstOrderVars parseForm parseTerm
     where parseVarApp   = do c <- oneOf "XYZ"
                              t <- char '(' *>  parseTerm <* char ')'
                              return (SOMApp SOApp :!$: SOMVar [c] :!$: t)
 
 --TODO : typeclass to unify these
 
-parseLamApp parseForm parseTerm = 
-        do var <- oneOf "λ\\" *> parseFreeVar
+parseLamApp firstOrderVars parseForm parseTerm = 
+        do var <- oneOf "λ\\" *> parseFreeVar firstOrderVars
            f <- char '[' *> parseForm <* char ']'
            term <- char '(' *> parseTerm <* char ')'
            let bf x = subBoundVar var x f
            return (SOMApp SOApp :!$: (typedLam (show var) bf) :!$: term)
 
-parseLamAppPSOL parseForm parseTerm = 
+parseLamAppPSOL firstOrderVars parseForm parseTerm = 
         do binders <- many1 binder
            f <- char '[' *> parseForm <* char ']'
            terms <- char '(' *> sepBy1 parsePaddedTerm (char ',') <* char ')'
@@ -122,7 +147,7 @@ parseLamAppPSOL parseForm parseTerm =
                Just f' -> return f'
                Nothing -> unexpected "wrong number of lambdas"
     where binder = do oneOf "λ\\"
-                      parseFreeVar
+                      parseFreeVar firstOrderVars
 
           parsePaddedTerm = spaces *> parseTerm <* spaces
 
@@ -130,9 +155,12 @@ parseLamAppPSOL parseForm parseTerm =
           together n f [] []  = Just f
           together n f _ _    = Nothing
 
-psolPredicationParser :: Parsec String u (PolyadicallySOL (Form Bool)) -> Parsec String u (PolyadicallySOL (Term Int)) 
+psolPredicationParser :: [Char] -> [Char] -> Parsec String u (PolyadicallySOL (Form Bool)) -> Parsec String u (PolyadicallySOL (Term Int)) 
     -> Parsec String u (PolyadicallySOL (Form Bool))
-psolPredicationParser parseForm parseTerm = try (parsePredicateSymbol "FGHIJKLMNO" parseTerm) <|> parseVarApp <|> parseLamAppPSOL parseForm parseTerm
+psolPredicationParser firstOrderVars predicateSymbols parseForm parseTerm = 
+        try (parsePredicateSymbol predicateSymbols parseTerm) 
+        <|> parseVarApp 
+        <|> parseLamAppPSOL firstOrderVars parseForm parseTerm
     where parseVarApp = do v <- oneOf "XYZ"
                            n <- number
                            char '(' *> spaces

@@ -129,6 +129,7 @@ instance PrismPolyadicFunction (OpenSOLLex a) Int Int
 instance PrismPolyadicSchematicFunction (OpenSOLLex a) Int Int
 instance PrismTermEquality (OpenSOLLex a) Int Bool
 instance PrismBooleanConnLex (OpenSOLLex a) Bool
+instance PrismBooleanConst (OpenSOLLex a) Bool
 instance PrismGenericTypedLambda (OpenSOLLex a) Term Form Int
 instance PrismStandardVar (OpenSOLLex a) Int
 instance PrismSubstitutionalVariable (OpenSOLLex a)

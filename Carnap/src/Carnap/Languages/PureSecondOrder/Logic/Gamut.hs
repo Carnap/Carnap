@@ -8,7 +8,7 @@ import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PurePropositional.Logic.Rules (premConstraint)
 import Carnap.Languages.PureFirstOrder.Logic.Rules (notAssumedConstraint)
 import Carnap.Languages.PureFirstOrder.Logic (GamutNDCore(..), GamutNDPlus(CoreP), parseGamutNDPlus)
-import Carnap.Languages.PureSecondOrder.Parser
+import Carnap.Languages.PureSecondOrder.Parser (gamutFormulaParser)
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
@@ -99,14 +99,14 @@ parseGamutNDSOL rtc = try soRule <|> liftFO
 
 parseGamutNDSOLProof :: RuntimeDeductionConfig PolyadicallySOLLex (Form Bool) 
                     -> String -> [DeductionLine GamutNDSOL PolyadicallySOLLex (Form Bool)]
-parseGamutNDSOLProof rtc = toDeductionFitch (parseGamutNDSOL rtc) psolFormulaParser
+parseGamutNDSOLProof rtc = toDeductionFitch (parseGamutNDSOL rtc) gamutFormulaParser
 
 gamutNDSOLCalc = mkNDCalc
     { ndRenderer = NoRender
     , ndParseProof = parseGamutNDSOLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = parseSeqOver psolFormulaParser
-    , ndParseForm = psolFormulaParser
+    , ndParseSeq = parseSeqOver gamutFormulaParser
+    , ndParseForm = gamutFormulaParser
     , ndNotation = id
     }
