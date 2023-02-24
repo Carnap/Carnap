@@ -54,7 +54,8 @@ coreParserPSOL recur sfrecur = (parenParser recur <* spaces)
       <|> try (quantifiedSentenceParser (parseFreeVar firstOrderVars) sfrecur)
       <|> try (quantifiedSentenceParserPSOL sfrecur)
       <|> try (sentenceLetterParser sentenceLetters <* spaces)
-      <|> try (psolPredicationParser firstOrderVars predicateSymbols recur parseFOTerm)
+      <|> try (parsePredicateSymbol predicateSymbols parseFOTerm) 
+      <|> try (psolPredicationParser firstOrderVars recur parseFOTerm)
       <|> unaryOpParser [parseNeg] sfrecur
       where
         firstOrderVars = ['v'..'z']
@@ -67,7 +68,8 @@ coreParserGamut recur sfrecur = (gamutParens <* spaces)
       <|> try (quantifiedSentenceParser (parseFreeVar firstOrderVars) sfrecur)
       <|> try (quantifiedSentenceParserPSOL sfrecur)
       <|> try (sentenceLetterParser sentenceLetters <* spaces)
-      <|> try (psolPredicationParser firstOrderVars predicateSymbols recur parseFOTerm)
+      <|> try (parsePredicateSymbolNoParen predicateSymbols parseFOTerm) 
+      <|> try (psolPredicationParserNoParen firstOrderVars recur parseFOTerm)
       <|> try (equalsParser parseFOTerm)
       <|> try (booleanConstParser <* spaces)
       <|> unaryOpParser [parseNeg] sfrecur
@@ -155,12 +157,24 @@ parseLamAppPSOL firstOrderVars parseForm parseTerm =
           together n f [] []  = Just f
           together n f _ _    = Nothing
 
-psolPredicationParser :: [Char] -> [Char] -> Parsec String u (PolyadicallySOL (Form Bool)) -> Parsec String u (PolyadicallySOL (Term Int)) 
+parseLamAppPSOLNoParen firstOrderVars parseForm parseTerm = 
+        do binders <- many1 binder
+           f <- char '[' *> parseForm <* char ']'
+           terms <- many parseTerm
+           case together 0 f (reverse binders) terms of
+               Just f' -> return f'
+               Nothing -> unexpected "wrong number of lambdas"
+    where binder = do oneOf "λ\\"
+                      parseFreeVar firstOrderVars
+
+          together n f (v:vs) (t:ts) = together (n+1) (SOPApp SOApp :!$: incLam n f v :!$: t) vs ts
+          together n f [] []  = Just f
+          together n f _ _    = Nothing
+
+psolPredicationParser :: [Char] -> Parsec String u (PolyadicallySOL (Form Bool)) -> Parsec String u (PolyadicallySOL (Term Int)) 
     -> Parsec String u (PolyadicallySOL (Form Bool))
-psolPredicationParser firstOrderVars predicateSymbols parseForm parseTerm = 
-        try (parsePredicateSymbol predicateSymbols parseTerm) 
-        <|> parseVarApp 
-        <|> parseLamAppPSOL firstOrderVars parseForm parseTerm
+psolPredicationParser firstOrderVars parseForm parseTerm = 
+        parseVarApp <|> parseLamAppPSOL firstOrderVars parseForm parseTerm
     where parseVarApp = do v <- oneOf "XYZ"
                            n <- number
                            char '(' *> spaces
@@ -173,3 +187,17 @@ psolPredicationParser firstOrderVars predicateSymbols parseForm parseTerm =
                                let partialPred = (SOPApp SOApp :!$: v :!$: t)
                                (char ',' *> parseVarTerms (incVar partialPred))
                                     <|> (char ')' *> return partialPred)
+
+psolPredicationParserNoParen :: [Char] -> Parsec String u (PolyadicallySOL (Form Bool)) -> Parsec String u (PolyadicallySOL (Term Int)) 
+    -> Parsec String u (PolyadicallySOL (Form Bool))
+psolPredicationParserNoParen firstOrderVars parseForm parseTerm = 
+        parseVarApp <|> parseLamAppPSOLNoParen firstOrderVars parseForm parseTerm
+    where parseVarApp = do v <- oneOf "XYZ"
+                           n <- number
+                           terms <- lookAhead (many parseTerm)
+                           if length terms /= n then unexpected "wrong number of arguments to second order variable"
+                                                else return ()
+                           parseVarTerms (polyVar (v : show n) AOne)
+          parseVarTerms v = do t <- parseTerm
+                               let partialPred = (SOPApp SOApp :!$: v :!$: t)
+                               parseVarTerms (incVar partialPred) <|> return partialPred
