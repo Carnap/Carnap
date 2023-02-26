@@ -101,6 +101,23 @@ parseGamutNDSOLProof :: RuntimeDeductionConfig PolyadicallySOLLex (Form Bool)
                     -> String -> [DeductionLine GamutNDSOL PolyadicallySOLLex (Form Bool)]
 parseGamutNDSOLProof rtc = toDeductionFitch (parseGamutNDSOL rtc) gamutFormulaParser
 
+gamutNotation :: String -> String
+gamutNotation s = case s of
+         (']':'(':xs) ->  ']' : trimParens 0 ('(':xs)
+         (x:y:xs) | x `elem` ['A' .. 'Z'] && y `elem` ['0' .. '9'] -> x : y : trimParens 0 xs
+         (x:xs)   | x `elem` ['A' .. 'Z'] -> x : trimParens 0 xs
+         (x:xs) -> x : gamutNotation xs
+         x -> x
+    where trimParens 0 ('(':xs) = trimParens 1 xs
+          trimParens 0 xs = gamutNotation xs
+          trimParens 1 (')':xs) = gamutNotation xs
+          trimParens 1 (',':xs) = trimParens 1 xs
+          trimParens n ('(':xs) = '(' : trimParens (n + 1) xs
+          trimParens n (')':xs) = ')' : trimParens (n - 1) xs
+          trimParens n (x:xs) | x `elem` ['A' .. 'Z'] = x : trimParens n (trimParens 0 xs)
+          trimParens n (x:xs) = x : trimParens n xs
+          trimParens n [] = []
+
 gamutNDSOLCalc = mkNDCalc
     { ndRenderer = NoRender
     , ndParseProof = parseGamutNDSOLProof
@@ -108,5 +125,5 @@ gamutNDSOLCalc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver gamutFormulaParser
     , ndParseForm = gamutFormulaParser
-    , ndNotation = id
+    , ndNotation = gamutNotation
     }
