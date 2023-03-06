@@ -104,6 +104,8 @@ parseGamutNDSOLProof rtc = toDeductionFitch (parseGamutNDSOL rtc) gamutFormulaPa
 gamutNotation :: String -> String
 gamutNotation s = case s of
          (']':'(':xs) ->  ']' : trimParens 0 ('(':xs)
+         ('∀':x:y:xs) | x `elem` ['A' .. 'Z'] -> '∀' : x: y : gamutNotation xs
+         ('∃':x:y:xs) | x `elem` ['A' .. 'Z'] -> '∃' : x: y : gamutNotation xs
          (x:y:xs) | x `elem` ['A' .. 'Z'] && y `elem` ['0' .. '9'] -> x : y : trimParens 0 xs
          (x:xs)   | x `elem` ['A' .. 'Z'] -> x : trimParens 0 xs
          (x:xs) -> x : gamutNotation xs
