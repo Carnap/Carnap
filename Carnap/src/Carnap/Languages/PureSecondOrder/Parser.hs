@@ -42,7 +42,7 @@ coreParserMSOL recur sfrecur = (parenParser recur <* spaces)
       <|> try (quantifiedSentenceParser (parseFreeVar firstOrderVars) sfrecur)
       <|> try (quantifiedSentenceParser parseMSOLVar sfrecur)
       <|> try (sentenceLetterParser sentenceLetters <* spaces)
-      <|> try (msolpredicationParser firstOrderVars recur parseFOTerm)
+      <|> try (msolpredicationParser firstOrderVars recur parseFOTerm <* spaces)
       <|> unaryOpParser [parseNeg] sfrecur
       where
         firstOrderVars = ['v'..'z']
@@ -54,8 +54,8 @@ coreParserPSOL recur sfrecur = (parenParser recur <* spaces)
       <|> try (quantifiedSentenceParser (parseFreeVar firstOrderVars) sfrecur)
       <|> try (quantifiedSentenceParserPSOL sfrecur)
       <|> try (sentenceLetterParser sentenceLetters <* spaces)
-      <|> try (parsePredicateSymbol predicateSymbols parseFOTerm) 
-      <|> try (psolPredicationParser firstOrderVars recur parseFOTerm)
+      <|> try (parsePredicateSymbol predicateSymbols parseFOTerm <* spaces) 
+      <|> try (psolPredicationParser firstOrderVars recur parseFOTerm <* spaces)
       <|> unaryOpParser [parseNeg] sfrecur
       where
         firstOrderVars = ['v'..'z']
@@ -68,9 +68,9 @@ coreParserGamut recur sfrecur = (gamutParens <* spaces)
       <|> try (quantifiedSentenceParser (parseFreeVar firstOrderVars) sfrecur)
       <|> try (quantifiedSentenceParserPSOL sfrecur)
       <|> try (sentenceLetterParser sentenceLetters <* spaces)
-      <|> try (parsePredicateSymbolNoParen predicateSymbols parseFOTerm) 
-      <|> try (psolPredicationParserNoParen firstOrderVars recur parseFOTerm)
-      <|> try (equalsParser parseFOTerm)
+      <|> try (parsePredicateSymbolNoParen predicateSymbols parseFOTerm <* spaces) 
+      <|> try (psolPredicationParserNoParen firstOrderVars recur parseFOTerm <* spaces)
+      <|> try (equalsParser parseFOTerm <* spaces)
       <|> try (booleanConstParser <* spaces)
       <|> unaryOpParser [parseNeg] sfrecur
       where
