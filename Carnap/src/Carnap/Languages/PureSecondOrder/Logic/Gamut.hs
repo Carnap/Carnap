@@ -84,7 +84,7 @@ parseGamutNDSOL :: RuntimeDeductionConfig PolyadicallySOLLex (Form Bool)
 parseGamutNDSOL rtc = try soRule <|> liftFO
     where liftFO = do r <- parseGamutNDPlus (defaultRuntimeDeductionConfig)
                       return (map GamutFO r)
-          soRule = do r <- choice (map (try . string) ["PR", "IA", "I∀", "EA", "E∀", "IE", "I∃", "ABS", "APP"])
+          soRule = do r <- choice (map (try . string) ["PR", "IA", "I∀", "EA", "E∀", "IE", "I∃", "EE", "∃E", "ABS", "APP"])
                       if r == "PR" 
                           then return [PPR $ problemPremises rtc]
                           else do ds <- many1 digit
