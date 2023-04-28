@@ -146,6 +146,7 @@ LayoutSharedDocuments: Shared Documents
 LayoutSharedDocumentation: Documentation
 LayoutLogout: Logout
 LayoutLogin: Login
+LayoutMunson: This work has been supported by a Munson-Simu Faculty Star award at Kansas State University.
 
 # templates/documentIndex.hamlet
 

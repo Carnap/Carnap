@@ -58,3 +58,4 @@
         An
         <a#opentower href="https://open-tower.com"> Open Tower
         \ project. #{appCopyright $ appSettings master}
+        <br> _{MsgLayoutMunson}
