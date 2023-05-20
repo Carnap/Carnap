@@ -56,7 +56,7 @@ Direct Derivation
 :   A (simple) *Direct Derivation* is a sequence of assertions, each of which is
     justified, either because it is a premise or because it is the conclusion
     of a valid and recognized argument whose premises are assertions that have
-    already occured in the derivation.
+    already occurred in the derivation.
 
 In this section, we will learn a little bit about how to make use of direct
 derivations. We will need to do two things. First, we need to decide which
