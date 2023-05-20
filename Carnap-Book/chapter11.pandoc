@@ -583,7 +583,7 @@ bound by" a quantifier, allows us to avoid the type of ambiguity that arises
 in a sentence like (@jerks1). Here are the rules for variable binding:
 
 Binding 
-:   A quantificational phrase $Q$ binds an occurance of a variable $x$ if and only if
+:   A quantificational phrase $Q$ binds an occurrence of a variable $x$ if and only if
 
     1. $x$ is part of $Q$. So, $Q$ is either $\exists x$ or $\forall x$
 
