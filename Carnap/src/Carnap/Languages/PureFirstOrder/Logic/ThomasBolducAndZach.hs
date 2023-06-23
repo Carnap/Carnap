@@ -173,13 +173,14 @@ parseThomasBolducAndZachFOLCore rtc = try quantRule <|> (map TFLC <$> parseProp)
                               | r == "=E" -> return [IDE1,IDE2]
                               | r == "PR" -> return [Pr (problemPremises rtc)]
 
---ordering of the parsing clauses is important here: TFLCore is included
+--XXX ordering of the parsing clauses is important here: TFLCore is included
 --in FOLCore, and in TFL, we want to get the version that is including in
 --TFL, so that our global restrictions will apply properly
-parseThomasBolducAndZachFOL rtc = try (map TFL <$> parseProp) <|> try (map FOL <$> quantRule) <|>  try cqRule
+parseThomasBolducAndZachFOL rtc = try premRule <|> try (map TFL <$> parseProp) <|> try (map FOL <$> quantRule) <|>  try cqRule
     where parseProp = P.parseThomasBolducAndZachTFL (defaultRuntimeDeductionConfig)
           quantRule = parseThomasBolducAndZachFOLCore rtc
           cqRule = string "CQ" >> return [QN1,QN2,QN3,QN4]
+          premRule = string "PR" >> return [FOL $ Pr (problemPremises rtc)] --short-circuit TFL from handling premises
 
 parseThomasBolducAndZachFOL2019Proof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool)]
 parseThomasBolducAndZachFOL2019Proof ders = toDeductionFitch (parseThomasBolducAndZachFOLCore ders) thomasBolducAndZachFOL2019FormulaParser
