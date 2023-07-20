@@ -70,7 +70,6 @@ the premises in a list, above the conclusion, like so:
 > | 1. <span class="premise">Any motion can be made faster.</span>
 > | <span class="conclusion"> There's no fastest motion</span>
 
-
 > | 1. <span class="premise">My Client ate a bad diet.</span>
 > | 2. <span class="premise">A bad diet can cause a lack of self-control.</span>
 > | <span class="conclusion"> My client is innocent by reason of insanity.</span>
@@ -124,15 +123,15 @@ remain unsure about whether the argument supports its conclusion.
 For example, consider these two arguments:
 
 
-> | 1. <span class="premise">Nine out of ten stop and frisk subjects are not charged with a crime.</span>
-> | <span class="conclusion">NYC Police are unreliable judges of whether someone has committed a crime.</span>
+> | 1. <span class="premise">If you're healthy, there's only a 5% chance of symptoms.</span> 
+> | <span class="conclusion">If you've got symptoms, you're probably sick.</span>
 
 > | 1. <span class="premise">Unless soil is deep and sandy, it is not suitable for carrots.</span>
 > | 2. <span class="premise">Soil is either suitable for carrots or tomatoes, but not both.</span>
 > |  <span class="conclusion">Soil suitable for tomatoes is not both deep and sandy.</span>
 
 
-It is far from immediately obvious, but the first argument does not give reason
+It takes a little thinking to see, but the first argument does not give reason
 to believe its conclusion. That is in spite of the fact that we may have little
 doubt about the first premise. If we consider the second argument, we'll also
 find ourselves unsure about the conclusion. If a master gardener tells us that
