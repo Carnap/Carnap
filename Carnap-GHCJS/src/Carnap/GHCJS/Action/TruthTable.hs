@@ -16,11 +16,13 @@ import Carnap.Languages.PurePropositional.Logic (PropSequentCalc)
 import Carnap.Languages.Util.LanguageClasses
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
-import GHCJS.DOM.HTMLSelectElement (castToHTMLSelectElement, getValue) 
+import GHCJS.DOM.HTMLSelectElement (castToHTMLSelectElement, getValue, setSelectedIndex) 
 import GHCJS.DOM.Window (alert, prompt)
 import GHCJS.DOM.Document (createElement, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, getParentElement, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
+import GHCJS.DOM.HTMLInputElement(setValue)
+import GHCJS.DOM.HTMLCollection
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.Text (pack)
@@ -76,7 +78,12 @@ activateTruthTables w (Just (i,o,opts)) = do
                               bt2 <- questionButton w "Check"
                               appendChild bw (Just bt2)
                               checkIt <- newListener $ checkTable wrap ref check
-                              addListener bt2 click checkIt False                
+                              addListener bt2 click checkIt False
+                              -- reset bttn
+                              bt3 <- questionButton w "Reset"
+                              appendChild bw (Just bt3)
+                              resetIt <- newListener $ resetTruthTable i o opts
+                              addListener bt3 click resetIt False
                           return ()
                 _ -> print "truth table was missing an option"
           checkTable wrap ref check = liftIO $ do correct <- check
@@ -87,6 +94,20 @@ activateTruthTables w (Just (i,o,opts)) = do
                                                       else do message "Something's not quite right"
                                                               writeIORef ref False
                                                               setFailure w wrap
+
+resetTruthTable :: Element -> Element -> Map String String -> EventM Element MouseEvent ()
+resetTruthTable inputElem outputElem opts = liftIO $ do
+    resetSelectsToFirstOption outputElem
+
+resetSelectsToFirstOption :: Element -> IO ()
+resetSelectsToFirstOption parentDiv = do
+  selectElems <- getElementsByTagName parentDiv "select"
+  selects <- maybeNodeListToList selectElems
+  mapM_ resetSelect selects
+  where
+    resetSelect :: Maybe Element -> IO ()
+    resetSelect (Just selectElem) = setSelectedIndex (castToHTMLSelectElement selectElem) 0
+    resetSelect Nothing = return ()
 
 submitTruthTable:: (SerializableAsTruthTable ref, IsEvent e) => 
     Document -> Map String String -> Element -> IORef Bool ->  IO Bool -> ref -> String -> String -> EventM HTMLInputElement e ()
