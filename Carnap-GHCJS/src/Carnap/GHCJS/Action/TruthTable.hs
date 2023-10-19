@@ -21,8 +21,6 @@ import GHCJS.DOM.Window (alert, prompt)
 import GHCJS.DOM.Document (createElement, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, getParentElement, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
-import GHCJS.DOM.HTMLInputElement(setValue)
-import GHCJS.DOM.HTMLCollection
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.Text (pack)
