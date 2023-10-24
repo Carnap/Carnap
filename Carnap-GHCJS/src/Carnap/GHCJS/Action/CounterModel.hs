@@ -275,7 +275,7 @@ prepareModelUI w fs (i,o) mdl bw opts = do
            -- append closing set bracket to domain label
            mapM (appendChild domainLabel . Just) [domainInput, domainWarn, closingBracketSpan]
            
-           mapM (appendChild o . Just) [domainLabel]
+           appendChild o (Just domainLabel)
 
            appendRelationInputs w o opts fs mdl
            appendPropInputs w o opts fs mdl
