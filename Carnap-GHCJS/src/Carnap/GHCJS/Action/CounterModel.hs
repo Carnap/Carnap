@@ -378,7 +378,7 @@ getRelationInput w opts f mdl = case addRelation f mdl [] of
                                              setAttribute relationInput "class" "relationInput"
                                              appendChild relationLabel (Just relationInput)
                                              appendChild relationLabel (Just parseWarn)
-S
+
                                              -- create the closing set bracket
                                              Just closingBracketSpan <- createElement w (Just "span")
                                              setInnerHTML closingBracketSpan $ Just "}" 
