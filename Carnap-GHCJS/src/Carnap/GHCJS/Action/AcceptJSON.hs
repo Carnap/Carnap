@@ -200,15 +200,19 @@ foreign import javascript unsafe "acceptJSONCallbackGallow_ = $1" initializeCall
 --TODO: unify with other callback code in SequentCheck
 
 foreign import javascript unsafe "$1($2);" simpleCall :: JSVal -> JSVal -> IO ()
+foreign import javascript unsafe "console.error('could not parse input');" jsError :: IO ()
 
 initializeCallback :: (Callback (JSVal -> JSVal -> IO ()) -> IO ()) -> ((Value -> IO Value) -> IO ())
 initializeCallback jscb f = do theCB <- asyncCallback2 (cb f)
                                jscb theCB
     where cb f payload succ = do (Just raw) <- fromJSVal payload
-                                 let (Just val) = decode . fromStrict . encodeUtf8 $ raw
-                                 rslt <- f val
-                                 rslt' <- toJSVal rslt
-                                 simpleCall succ rslt'
+                                 print (raw)
+                                 let dc = decode . fromStrict . encodeUtf8 $ raw
+                                 case dc of
+                                    Just val -> do rslt <- f val
+                                                   rslt' <- toJSVal rslt
+                                                   simpleCall succ rslt'
+                                    Nothing -> jsError
 
 #else
 
