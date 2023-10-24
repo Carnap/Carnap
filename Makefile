@@ -88,7 +88,7 @@ build-ghcjs:
 ifeq ($(origin NIX_STORE),undefined)
 	nix-shell --arg ghcjs true --run 'make build-ghcjs'
 else
-	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs --ghc-options="+RTS -M600M" -j1 -O -fno-spec-constr new-build $(TARGET)
+	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build $(TARGET)
 	# make a fake nix output directory so we don't have to change the symlinks from a nix-built
 	# client (allowing people working only on the server to download a client from nix cache)
 	mkdir -p .cabal-fake-client-out/bin

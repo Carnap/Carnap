@@ -206,7 +206,6 @@ initializeCallback :: (Callback (JSVal -> JSVal -> IO ()) -> IO ()) -> ((Value -
 initializeCallback jscb f = do theCB <- asyncCallback2 (cb f)
                                jscb theCB
     where cb f payload succ = do (Just raw) <- fromJSVal payload
-                                 print (raw)
                                  let dc = decode . fromStrict . encodeUtf8 $ raw
                                  case dc of
                                     Just val -> do rslt <- f val
