@@ -1,10 +1,9 @@
-# Model Checking Module Tests (ADDED FOR DEV): Give a model that makes the following formula **false**:
+# Model Checking Module Tests (added for dev):
 
-### Quick view of functionality:
-### All domains contain set brackets
+## Quick view of functionality:
 
 ## .Simple
-### Set brackets around functions
+### Set brackets around functions and domain
 ```{.CounterModeler .Simple}
 1.1 AxAy(f(x,y) = f(y,x))
 ```
@@ -15,12 +14,13 @@
 ~~~
 
 ## .Validity
-### Set brackets around predicates
+### Set brackets around predicates and domain
 ```{.CounterModeler .Validity}
 1.2 AxEyF(x,y) :|-: ExAyF(y,x)
 ```
 
 ## .Constraint
+### set brackets around predicates and domain
 ```{.CounterModeler .Constraint }
 1.3 ExEy(not x = y) : AxAyF(x,y)
 ```
