@@ -1,5 +1,6 @@
 # Model Checking Module Tests (ADDED FOR DEV): Give a model that makes the following formula **false**:
 
+# Quick view of functionality:
 In the following exercises, you will practice the creation of models that make a formula false.
 # All domains contain set brackets
 
@@ -24,3 +25,149 @@ In the following exercises, you will practice the creation of models that make a
 ~~~{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" points=1}
   M(p) /\ L(p,m)
 ~~~
+
+# More tests (found online)
+
+```{.CounterModeler .Simple}
+1.1 AxF(x), ExG(x)
+```
+~~~{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" points=1}
+  M(p) /\ L(p,m)
+~~~
+**A solution:** Domain: [ 0, 1 ]&nbsp;&nbsp;&nbsp; M(_): [ 0 ]&nbsp;&nbsp;&nbsp; p: [ 0 ]&nbsp;&nbsp;&nbsp; m: [ 1 ] &nbsp;&nbsp;&nbsp; L: [  ]
+<br>
+<br>
+
+<span style="color: blue;font-size:20pt">**Exercises**</span>
+
+#### Give a model that makes the following formula **false**:
+
+<p style="color: red;font-size:13pt">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;KEY:&nbsp;p Peter &nbsp;&nbsp;o Otto &nbsp;&nbsp;m Maria &nbsp;&nbsp;c Clara &nbsp;&nbsp;M Mann &nbsp;&nbsp;S schlafen &nbsp;&nbsp;F Frau &nbsp;&nbsp;L lieben 
+</p>
+
+```{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" submission="none"}
+B.  M(p)
+```
+
+<br>
+
+#### Give a model that makes the following formula **false**:
+
+<p style="color: red;font-size:13pt">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;KEY:&nbsp;p Peter &nbsp;&nbsp;o Otto &nbsp;&nbsp;m Maria &nbsp;&nbsp;c Clara &nbsp;&nbsp;M Mann &nbsp;&nbsp;S schlafen &nbsp;&nbsp;F Frau &nbsp;&nbsp;L lieben 
+</p>
+
+```{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" submission="none"}
+1.  M(p) /\ M(m)
+```
+
+<br>
+
+#### Give a model that makes the following formula **false**:
+
+<p style="color: red;font-size:13pt">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;KEY:&nbsp;p Peter &nbsp;&nbsp;o Otto &nbsp;&nbsp;m Maria &nbsp;&nbsp;c Clara &nbsp;&nbsp;M Mann &nbsp;&nbsp;S schlafen &nbsp;&nbsp;F Frau &nbsp;&nbsp;L lieben 
+</p>
+
+```{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" submission="none"}
+2.  M(p) /\ ~M(m)
+```
+
+<br>
+
+#### Give a model that makes the following formula **false**:
+
+<p style="color: red;font-size:13pt">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;KEY:&nbsp;p Peter &nbsp;&nbsp;o Otto &nbsp;&nbsp;m Maria &nbsp;&nbsp;c Clara &nbsp;&nbsp;M Mann &nbsp;&nbsp;S schlafen &nbsp;&nbsp;F Frau &nbsp;&nbsp;L lieben 
+</p>
+
+```{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" submission="none"}
+3.  ~M(p) /\ ~M(m)
+```
+
+<br>
+
+#### Give a model that makes the following formula **false**:
+
+<p style="color: red;font-size:13pt">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;KEY:&nbsp;p Peter &nbsp;&nbsp;o Otto &nbsp;&nbsp;m Maria &nbsp;&nbsp;c Clara &nbsp;&nbsp;M Mann &nbsp;&nbsp;S schlafen &nbsp;&nbsp;F Frau &nbsp;&nbsp;L lieben 
+</p>
+
+```{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" submission="none"}
+4.  ~(M(p) \/ ~M(m))
+```
+
+<br>
+
+#### Give a model that makes the following formula **false**:
+
+<p style="color: red;font-size:13pt">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;KEY:&nbsp;p Peter &nbsp;&nbsp;o Otto &nbsp;&nbsp;m Maria &nbsp;&nbsp;c Clara &nbsp;&nbsp;M Mann &nbsp;&nbsp;S schlafen &nbsp;&nbsp;F Frau &nbsp;&nbsp;L lieben 
+</p>
+
+```{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" submission="none"}
+5.  ~M(p) \/ ~M(m)
+```
+
+<br>
+
+#### Give a model that makes the following formula **false**:
+
+<p style="color: red;font-size:13pt">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;KEY:&nbsp;p Peter &nbsp;&nbsp;o Otto &nbsp;&nbsp;m Maria &nbsp;&nbsp;c Clara &nbsp;&nbsp;M Mann &nbsp;&nbsp;S schlafen &nbsp;&nbsp;F Frau &nbsp;&nbsp;L lieben 
+</p>
+
+```{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" submission="none"}
+6.  (M(p) /\ F(m)) -> L(p,m)
+```
+
+<br>
+
+#### Give a model that makes the following formula **false**:
+
+<p style="color: red;font-size:13pt">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;KEY:&nbsp;p Peter &nbsp;&nbsp;o Otto &nbsp;&nbsp;m Maria &nbsp;&nbsp;c Clara &nbsp;&nbsp;M Mann &nbsp;&nbsp;S schlafen &nbsp;&nbsp;F Frau &nbsp;&nbsp;L lieben 
+</p>
+
+```{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" submission="none"}
+7.   L(m,p) <-> L(p,m)
+```
+
+<br>
+
+#### Give a model that makes the following formula **false**:
+
+<p style="color: red;font-size:13pt">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;KEY:&nbsp;p Peter &nbsp;&nbsp;o Otto &nbsp;&nbsp;m Maria &nbsp;&nbsp;c Clara &nbsp;&nbsp;M Mann &nbsp;&nbsp;S schlafen &nbsp;&nbsp;F Frau &nbsp;&nbsp;L lieben 
+</p>
+
+```{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" submission="none"}
+8.   M(o) /\ (~M(o) \/ S(o))
+```
+
+<br>
+
+#### Give a model that makes the following formula **false**:
+
+<p style="color: red;font-size:13pt">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;KEY:&nbsp;p Peter &nbsp;&nbsp;o Otto &nbsp;&nbsp;m Maria &nbsp;&nbsp;c Clara &nbsp;&nbsp;M Mann &nbsp;&nbsp;S schlafen &nbsp;&nbsp;F Frau &nbsp;&nbsp;L lieben 
+</p>
+
+```{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" submission="none"}
+9.   M(o) \/ (~M(o) /\ S(o))
+```
+
+<br>
+
+#### Give a model that makes the following formula **false**:
+
+<p style="color: red;font-size:13pt">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;KEY:&nbsp;p Peter &nbsp;&nbsp;o Otto &nbsp;&nbsp;m Maria &nbsp;&nbsp;c Clara &nbsp;&nbsp;M Mann &nbsp;&nbsp;S schlafen &nbsp;&nbsp;F Frau &nbsp;&nbsp;L lieben 
+</p>
+
+```{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" submission="none"}
+10.   L(m,m) <-> L(p,p)
+```
+
+<br>
