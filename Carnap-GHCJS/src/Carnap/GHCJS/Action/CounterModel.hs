@@ -267,14 +267,14 @@ prepareModelUI w fs (i,o) mdl bw opts = do
            setAttribute domainInput "name" "Domain"
            setAttribute domainInput "rows" "1"
            setValue (castToHTMLTextAreaElement domainInput) (Just "0")
-           mapM (appendChild domainLabel . Just) [domainInput, domainWarn]
            
+           -- create closing set bracket
            Just closingBracketSpan <- createElement w (Just "span")
            setInnerHTML closingBracketSpan $ Just "}"
 
-           --appendChild o (Just domainLabel)
-           mapM (appendChild domainLabel . Just)[closingBracketSpan]
-
+           -- append closing set bracket to domain label
+           mapM (appendChild domainLabel . Just) [domainInput, domainWarn, closingBracketSpan]
+           
            mapM (appendChild o . Just) [domainLabel]
 
            appendRelationInputs w o opts fs mdl
@@ -379,10 +379,11 @@ getRelationInput w opts f mdl = case addRelation f mdl [] of
                                              appendChild relationLabel (Just relationInput)
                                              appendChild relationLabel (Just parseWarn)
 S
-                                             -- Append the closing curly brace
+                                             -- create the closing set bracket
                                              Just closingBracketSpan <- createElement w (Just "span")
                                              setInnerHTML closingBracketSpan $ Just "}" 
 
+                                             -- append the closing set bracket to the relation label
                                              appendChild relationLabel (Just closingBracketSpan)
 
                                              return $ Just relationLabel
@@ -409,10 +410,11 @@ getFunctionInput w opts f mdl = case addFunction f mdl [] of
                                                 appendChild functionLabel (Just functionInput)
                                                 appendChild functionLabel (Just parseWarn)
 
-                                                 -- Append the closing curly brace
+                                                 -- create the closing set bracket
                                                 Just closingBracketSpan <- createElement w (Just "span")
                                                 setInnerHTML closingBracketSpan $ Just "}" 
 
+                                                -- append the closing set bracket to the function label
                                                 appendChild functionLabel (Just closingBracketSpan)
 
                                              

@@ -1,0 +1,26 @@
+# Model Checking Module Tests (ADDED FOR DEV): Give a model that makes the following formula **false**:
+
+In the following exercises, you will practice the creation of models that make a formula false.
+# All domains contain set brackets
+
+# .Simple
+# Set brackets around functions
+```{.CounterModeler .Simple}
+1.1 AxAy(f(x,y) = f(y,x))
+```
+
+# .Validity
+# Set brackets around predicates
+```{.CounterModeler .Validity}
+1.2 AxEyF(x,y) :|-: ExAyF(y,x)
+```
+
+# .Constraint
+```{.CounterModeler .Constraint }
+1.3 ExEy(not x = y) : AxAyF(x,y)
+```
+
+# Constants not sets
+~~~{.CounterModeler .Simple counterexample-to="validity" system="thomasBolducAndZachFOL2019" points=1}
+  M(p) /\ L(p,m)
+~~~
