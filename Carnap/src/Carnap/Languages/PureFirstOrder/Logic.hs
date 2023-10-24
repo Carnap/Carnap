@@ -12,7 +12,7 @@ module Carnap.Languages.PureFirstOrder.Logic
         , parseIchikawaJenkinsQL, ichikawaJenkinsQLCalc
         , parseHardegreePL, hardegreePLCalc
         , parseTomassiQL, tomassiQLCalc
-        , gallowPLCalc, gallowPLPlusCalc
+        , parseGallowPL, gallowPLCalc, gallowPLPlusCalc
         , GamutNDPlus(..), GamutNDCore(..), parseGamutNDPlus
         , goldfarbNDCalc, goldfarbBrownNDCalc, goldfarbNDPlusCalc, goldfarbBrownNDPlusCalc
         , ofFOLSys, ofFOLTreeSys, ofFOLSeqSys
