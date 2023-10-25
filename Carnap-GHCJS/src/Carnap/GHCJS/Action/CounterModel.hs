@@ -262,13 +262,21 @@ prepareModelUI :: ModelingLanguage lex => Document -> [FixLang lex (Form Bool)] 
     -> IO ()
 prepareModelUI w fs (i,o) mdl bw opts = do
            Just domainLabel <- createElement w (Just "label")
-           setInnerHTML domainLabel $ Just (if "forallxStyle" `inOpts` opts then "UD = " else "Domain: ")
+           setInnerHTML domainLabel $ Just (if "forallxStyle" `inOpts` opts then "UD = " else "Domain: {  ")
            (domainInput,domainWarn) <- parsingInput w things domainUpdater
            setAttribute domainInput "name" "Domain"
            setAttribute domainInput "rows" "1"
            setValue (castToHTMLTextAreaElement domainInput) (Just "0")
-           mapM (appendChild domainLabel . Just) [domainInput, domainWarn]
+           
+           -- create closing set bracket
+           Just closingBracketSpan <- createElement w (Just "span")
+           setInnerHTML closingBracketSpan $ Just "}"
+
+           -- append closing set bracket to domain label
+           mapM (appendChild domainLabel . Just) [domainInput, domainWarn, closingBracketSpan]
+           
            appendChild o (Just domainLabel)
+
            appendRelationInputs w o opts fs mdl
            appendPropInputs w o opts fs mdl
            let ts = concatMap (toListOf termsOf) fs
@@ -363,13 +371,21 @@ getRelationInput w opts f mdl = case addRelation f mdl [] of
                                              Just relationLabel <- createElement w (Just "label")
                                              setInnerHTML relationLabel $ Just $ if "forallxStyle" `inOpts` opts 
                                                                             then "extension(" ++ [head (show $ blankTerms f)] ++ ") = "
-                                                                            else show (blankTerms f) ++ ": "
+                                                                            else show (blankTerms f) ++ ": { "
                                              (relationInput,parseWarn) <- parsingInput w (ntuples n) relationUpdater
                                              setAttribute relationInput "name" (show (blankTerms f))
                                              setAttribute relationInput "rows" "1"
                                              setAttribute relationInput "class" "relationInput"
                                              appendChild relationLabel (Just relationInput)
                                              appendChild relationLabel (Just parseWarn)
+
+                                             -- create the closing set bracket
+                                             Just closingBracketSpan <- createElement w (Just "span")
+                                             setInnerHTML closingBracketSpan $ Just "}" 
+
+                                             -- append the closing set bracket to the relation label
+                                             appendChild relationLabel (Just closingBracketSpan)
+
                                              return $ Just relationLabel
     where relationUpdater ext = case addRelation f mdl ext of
                                      Just io -> liftIO io >> return ()
@@ -386,13 +402,22 @@ getFunctionInput w opts f mdl = case addFunction f mdl [] of
                                                 Just functionLabel <- createElement w (Just "label")
                                                 setInnerHTML functionLabel $ Just $ if "forallxStyle" `inOpts` opts
                                                                                         then "extension(" ++ [head (show $ blankFuncTerms f)] ++ ") = "
-                                                                                        else show (blankFuncTerms f) ++ ": "
+                                                                                        else show (blankFuncTerms f) ++ ": {"
                                                 (functionInput,parseWarn) <- parsingInput w (nfunctuples (n + 1)) functionUpdater
                                                 setAttribute functionInput "name" (show (blankFuncTerms f))
                                                 setAttribute functionInput "rows" "1"
                                                 setAttribute functionInput "class" "functionInput"
                                                 appendChild functionLabel (Just functionInput)
                                                 appendChild functionLabel (Just parseWarn)
+
+                                                 -- create the closing set bracket
+                                                Just closingBracketSpan <- createElement w (Just "span")
+                                                setInnerHTML closingBracketSpan $ Just "}" 
+
+                                                -- append the closing set bracket to the function label
+                                                appendChild functionLabel (Just closingBracketSpan)
+
+                                             
                                                 return $ Just functionLabel
     where functionUpdater ext = case addFunction f mdl ext of
                                      Just io -> liftIO io >> return ()
