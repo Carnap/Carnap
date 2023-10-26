@@ -356,6 +356,10 @@
     padding-left: 5pt;
 }
 
+.montagueDisplay .show-cross {
+    text-decoration: line-through;
+}
+
 .fitchDisplay .subproof {
     margin-top:5px;
     margin-left:5pt;
