@@ -48,6 +48,9 @@ parseIff = parseAsIff [ "<=>",  "<->", "<>", "↔", "≡", "if and only if"]
 parseNeg :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l)
 parseNeg = do spaces >> (string "-" <|> string "~" <|> string "¬" <|> string "not") >> spaces >> return lneg
 
+parseNegStrict :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l)
+parseNegStrict = do spaces >> (string "~") >> spaces >> return lneg
+
 booleanConstParser :: (BooleanConstLanguage l, Monad m) => ParsecT String u m l
 booleanConstParser = stringsToTry ["!?","_|_","⊥"] lfalsum <|> stringsToTry ["⊤"] lverum 
 

@@ -2,7 +2,7 @@
 module Carnap.Languages.PurePropositional.Logic 
     ( PropSequentCalc
     , parsePropLogic, PropLogic, propCalc, propCalcStrict
-    , parseMontagueSC, MontagueSC, montagueSCCalc
+    , parseMontagueSC, MontagueSC, montagueSCCalc, kooSLCalc
     , parseLogicBookSD, LogicBookSD, logicBookSDCalc
     , parseLogicBookSDPlus,  LogicBookSDPlus, logicBookSDPlusCalc
     , parseHowardSnyderSL, HowardSnyderSL, howardSnyderSLCalc
@@ -50,6 +50,7 @@ import Carnap.Languages.PurePropositional.Logic.Hurley
 import Carnap.Languages.PurePropositional.Logic.HuthAndRyan
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 import Carnap.Languages.PurePropositional.Logic.KalishAndMontague
+import Carnap.Languages.PurePropositional.Logic.KooSL
 import Carnap.Languages.PurePropositional.Logic.Lande
 import Carnap.Languages.PurePropositional.Logic.Lemmon
 import Carnap.Languages.PurePropositional.Logic.Magnus
@@ -90,6 +91,7 @@ ofPropSys f sys | sys == "LogicBookSD"                   = Just $ f logicBookSDC
                 | sys == "ichikawaJenkinsSL"             = Just $ f ichikawaJenkinsSLCalc
                 | sys == "johnsonSL"                     = Just $ f allenSLCalc
                 | sys == "johnsonSLPlus"                 = Just $ f allenSLPlusCalc
+                | sys == "KooKMM-SL"                     = Just $ f kooSLCalc
                 | sys == "landeProp"                     = Just $ f landePropCalc
                 | sys == "lemmonProp"                    = Just $ f lemmonPropCalc
                 | sys == "magnusSL"                      = Just $ f magnusSLCalc
