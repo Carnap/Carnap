@@ -54,6 +54,7 @@ import Carnap.Languages.PurePropositional.Logic.Lande
 import Carnap.Languages.PurePropositional.Logic.Lemmon
 import Carnap.Languages.PurePropositional.Logic.Magnus
 import Carnap.Languages.PurePropositional.Logic.OpenLogic
+import Carnap.Languages.PurePropositional.Logic.Raven
 import Carnap.Languages.PurePropositional.Logic.Gregory
 import Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
 import Carnap.Languages.PurePropositional.Logic.Tomassi
@@ -103,6 +104,9 @@ ofPropSys f sys | sys == "LogicBookSD"                   = Just $ f logicBookSDC
                 | sys == "thomasBolducAndZachTFL"        = Just $ f thomasBolducAndZachTFLCalc
                 | sys == "thomasBolducAndZachTFL2019"    = Just $ f thomasBolducAndZachTFL2019Calc
                 | sys == "thomasBolducAndZachTFLCore"    = Just $ f thomasBolducAndZachTFLCoreCalc
+                | sys == "ravenTFL"                      = Just $ f ravenTFLCalc
+                | sys == "ravenTFL2019"                  = Just $ f ravenTFL2019Calc
+                | sys == "ravenTFLCore"                  = Just $ f ravenTFLCoreCalc
                 | sys == "tomassiPL"                     = Just $ f tomassiPLCalc
                 | sys == "winklerTFL"                    = Just $ f winklerTFLCalc
                 | sys == "zachPropEq"                    = Just $ f zachPropEqCalc

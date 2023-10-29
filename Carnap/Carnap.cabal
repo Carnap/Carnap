@@ -6,7 +6,7 @@ license:             GPL-3
 license-file:        LICENSE
 author:              Jake Ehrlich, Graham Leach-Krouse
 maintainer:          gleachkr@gmail.com
-copyright:           2019 Jake Ehrlich, Graham Leach-Krouse
+copyright:           2023 Jake Ehrlich, Graham Leach-Krouse
 category:            Web
 build-type:          Simple
 -- extra-source-files:
@@ -60,6 +60,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.Lemmon
                      , Carnap.Languages.PurePropositional.Logic.Magnus
                      , Carnap.Languages.PurePropositional.Logic.OpenLogic
+                     , Carnap.Languages.PurePropositional.Logic.Raven
                      , Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
                      , Carnap.Languages.PurePropositional.Logic.Tomassi
                      , Carnap.Languages.PurePropositional.Logic.Winkler
