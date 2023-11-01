@@ -145,6 +145,9 @@ activateChecker w (Just (i,o,opts)) =
                          ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
                          let submit = submitSyn w opts ref
                          btStatus <- createSubmitButton w bw submit opts
+                         resetButton <- questionButton w "Reset"
+                         appendChild bw (Just resetButton)
+                         addListener resetButton click (resetGoal ref) False
                          (Just tree) <- createElement w (Just "div")
                          appendChild o (Just tree)
                          setInnerHTML tree (Just $ sf f)                   
@@ -155,7 +158,13 @@ activateChecker w (Just (i,o,opts)) =
                          (Just w') <- getDefaultView w
                          doOnce i keyUp False $ liftIO $ btStatus Edited
                          setAttribute i "enterKeyHint" "go"
-                         addListener i keyUp match False                  
+                         addListener i keyUp match False
+                        where 
+                            resetGoal :: IORef (a, [(a, Integer)], Tree (a, Integer), Integer) -> EventM Element MouseEvent ()
+                            resetGoal ref = do (f,_,_,_) <- liftIO $ readIORef ref
+                                               liftIO $ do
+                                                writeIORef ref (f, [(f,0)], T.Node (f,0) [],0)
+                                                setInnerHTML o (Just "")
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "syntax check was missing an option"
 activateChecker _ Nothing  = return ()
