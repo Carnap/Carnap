@@ -145,9 +145,6 @@ activateChecker w (Just (i,o,opts)) =
                          ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
                          let submit = submitSyn w opts ref
                          btStatus <- createSubmitButton w bw submit opts
-                         resetButton <- questionButton w "Reset"
-                         appendChild bw (Just resetButton)
-                         addListener resetButton click (resetGoal ref) False
                          (Just tree) <- createElement w (Just "div")
                          appendChild o (Just tree)
                          setInnerHTML tree (Just $ sf f)                   
@@ -159,15 +156,31 @@ activateChecker w (Just (i,o,opts)) =
                          doOnce i keyUp False $ liftIO $ btStatus Edited
                          setAttribute i "enterKeyHint" "go"
                          addListener i keyUp match False
-                        where 
-                            resetGoal :: IORef (a, [(a, Integer)], Tree (a, Integer), Integer) -> EventM Element MouseEvent ()
-                            resetGoal ref = do (f,_,_,_) <- liftIO $ readIORef ref
-                                               liftIO $ do
-                                                writeIORef ref (f, [(f,0)], T.Node (f,0) [],0)
-                                                setInnerHTML o (Just "")
+                         resetButton <- questionButton w "Reset"
+                         appendChild bw (Just resetButton)
+                         resetGoal <- newListener $ resetGoalWrapper tree ref sf
+                         addListener resetButton click resetGoal False
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "syntax check was missing an option"
 activateChecker _ Nothing  = return ()
+
+
+resetGoalWrapper :: Element
+                    -> IORef (PureForm, [(PureForm, Int)], Tree (PureForm, Int), Int)
+                    -> (PureForm -> String)
+                    -> EventM Element MouseEvent ()
+resetGoalWrapper o ref sf = liftIO $ do
+    resetFn o ref sf
+
+resetFn :: Element
+                 -> IORef (PureForm, [(PureForm, Int)], Tree (PureForm, Int), Int)
+                 -> (PureForm -> String)
+                 -> IO ()
+resetFn o ref sf = do
+    (f, _, _, _) <- liftIO $ readIORef ref
+    liftIO $ writeIORef ref (f, [(f, 0)], T.Node (f, 0) [], 0)
+    liftIO $ setInnerHTML o (Just $ sf f)
+
 
 submitSyn :: IsEvent e => Document -> M.Map String String -> IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> String -> EventM HTMLInputElement e ()
 submitSyn w opts ref l = do (f,forms,_,_) <- liftIO $ readIORef ref
