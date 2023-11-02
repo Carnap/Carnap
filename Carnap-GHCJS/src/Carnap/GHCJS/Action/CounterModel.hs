@@ -111,9 +111,16 @@ activateCounterModeler w (Just (i,o,opts)) = do
                               bt2 <- questionButton w "Check"
                               appendChild bw (Just bt2)
                               checkIt <- newListener $ checkCounterModeler fields strictGivens check
-                              addListener bt2 click checkIt False                
+                              addListener bt2 click checkIt False
+
+                              bt3 <- questionButton w "Reset"
+                              appendChild bw (Just bt3)
+                              resetIt <- newListener $ resetCounterModel i o opts
+                              addListener bt3 click resetIt False
+
                           return ()
-                _ -> print "countermodeler lacks a goal"
+                _ -> print "countermodeler lacks a goal" 
+               
 
           checkCounterModeler fields strictGivens check = do 
                      validated <- liftIO $ validateModel strictGivens fields
@@ -129,6 +136,25 @@ activateCounterModeler w (Just (i,o,opts)) = do
                         _ -> do
                             message "Success!"
                             setAttribute wrap "class" "success"
+
+
+resetCounterModel :: Element -> Element -> Map String String -> EventM Element MouseEvent ()
+resetCounterModel inputElem outputElem opts = liftIO $ do
+    resetTextsToFirstOption outputElem
+
+resetTextsToFirstOption :: Element -> IO ()
+resetTextsToFirstOption parentDiv = do
+  textareaElems <- getElementsByTagName parentDiv "textarea"
+  textareas <- maybeNodeListToList textareaElems
+  mapM_ resetTextArea textareas
+  where
+    resetTextArea :: Maybe Element -> IO ()
+    resetTextArea (Just textareaElem) = do
+        name <- getAttribute textareaElem "name"
+        case name of
+            Just "Domain" -> setValue (castToHTMLTextAreaElement textareaElem) (Just "0")
+            Just _ -> setValue (castToHTMLTextAreaElement textareaElem) (Just "")
+    resetTextArea Nothing = return ()
 
 submitCounterModel:: IsEvent e => Document -> Map String String -> Element -> IO (Either String ())
     -> [Element] -> Map String String -> String -> String -> EventM HTMLTextAreaElement e ()
