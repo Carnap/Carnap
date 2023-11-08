@@ -2,7 +2,7 @@
 module Carnap.Languages.PureFirstOrder.Logic
         ( FOLogic(..)
         , parseFOLogic, folCalc
-        , parseMontagueQCCalc, montagueQCCalc
+        , parseMontagueQCCalc, montagueQCCalc, kooQLCalc
         , parseMagnusQL, magnusQLCalc
         , parseThomasBolducAndZachFOL, thomasBolducAndZachFOLCalc
         , parseThomasBolducAndZachFOLCore, thomasBolducAndZachFOL2019Calc, thomasBolducAndZachFOLPlus2019Calc
@@ -45,6 +45,7 @@ import Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
 import Carnap.Languages.PureFirstOrder.Logic.Lemmon
 import Carnap.Languages.PureFirstOrder.Logic.Lande
 import Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
+import Carnap.Languages.PureFirstOrder.Logic.KooQL
 import Carnap.Languages.PureFirstOrder.Logic.Magnus
 import Carnap.Languages.PureFirstOrder.Logic.OpenLogic
 import Carnap.Languages.PureFirstOrder.Logic.Gregory
@@ -86,6 +87,7 @@ ofFOLSys f sys | sys == "LogicBookPD"                     = Just $ f logicBookPD
                | sys == "howardSnyderPL"                  = Just $ f howardSnyderPLCalc
                | sys == "hurleyPL"                        = Just $ f hurleyPLCalc
                | sys == "ichikawaJenkinsQL"               = Just $ f ichikawaJenkinsQLCalc
+               | sys == "KooKMM-QL"                       = Just $ f kooQLCalc
                | sys == "lemmonQuant"                     = Just $ f lemmonQuantCalc
                | sys == "landeQuant"                      = Just $ f landeQuantCalc
                | sys == "magnusQL"                        = Just $ f magnusQLCalc

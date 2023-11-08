@@ -99,6 +99,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.Hurley
                      , Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
                      , Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
+                     , Carnap.Languages.PureFirstOrder.Logic.KooQL
                      , Carnap.Languages.PureFirstOrder.Logic.Lande
                      , Carnap.Languages.PureFirstOrder.Logic.Lemmon
                      , Carnap.Languages.PureFirstOrder.Logic.Magnus

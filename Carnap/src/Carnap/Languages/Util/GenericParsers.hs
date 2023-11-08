@@ -132,6 +132,10 @@ inequalityParser :: (EqLanguage lang arg ret, BooleanLanguage (lang ret), Monad 
 inequalityParser parseTerm = binaryInfixOpParser [string "!=" >> theparser, string "≠" >> theparser] parseTerm
     where theparser = return (\x y -> lneg (equals x y))
 
+inequalityParserStrict :: (EqLanguage lang arg ret, BooleanLanguage (lang ret), Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
+inequalityParserStrict parseTerm = binaryInfixOpParser [string "≠" >> theparser] parseTerm
+    where theparser = return (\x y -> lneg (equals x y))
+
 elementParser :: (ElemLanguage lang arg ret , Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
 elementParser parseTerm = binaryInfixOpParser ops parseTerm
     where ops = map (>> return isIn)  [string "∈", string "<<", string "<e", string "in"]
@@ -237,7 +241,23 @@ parsePredicateSymbolNoParen s parseTerm = parse <?> "a predicate symbol"
                          m = maybe 0 id midx
                      argParserNoParen parseTerm (ppn (n + (m * 26)) AOne)
 
-quantifiedSentenceParser, lplQuantifiedSentenceParser, altAltQuantifiedSentenceParser, altQuantifiedSentenceParser :: 
+kooParsePredicateSymbol :: 
+    ( PolyadicPredicateLanguage (FixLang lex) arg ret
+    , Incrementable lex arg
+    , Monad m
+    , Typeable ret
+    , Typeable arg
+    ) => String -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
+kooParsePredicateSymbol s parseTerm = parse <?> "a predicate symbol"
+    where parse = do    c <- oneOf s
+                        midx <- optionMaybe (char '_' >> posnumber)
+                        let Just n = ucIndex c 
+                            m = maybe 0 id midx
+                        ((char '(' *> argParserNoParen parseTerm (ppn (n + (m * 26)) AOne) <* char ')')
+                            <|>
+                            argParseOne parseTerm (ppn (n + (m * 26)) AOne))
+
+quantifiedSentenceParser, lplQuantifiedSentenceParser, altAltQuantifiedSentenceParser, altQuantifiedSentenceParser, kooQuantifiedSentenceParser :: 
     ( QuantLanguage (FixLang lex f) (FixLang lex t)
     , BoundVars lex
     , Show (FixLang lex t)
@@ -290,6 +310,15 @@ altAltQuantifiedSentenceParser parseFreeVar formulaParser =
            return $ if s `elem` "E∃" then lsome (show v) bf else lall (show v) bf
                --which we bind
 
+kooQuantifiedSentenceParser parseFreeVar formulaParser =
+        do s <- oneOf "@3∀∃" <?> "a quantifer symbol"
+           spaces
+           v <- parseFreeVar
+           spaces
+           f <- formulaParser
+           let bf x = subBoundVar v x f
+           return $ if s `elem` "@∀" then lall (show v) bf else lsome (show v) bf
+
 --------------------------------------------------------
 --Terms
 --------------------------------------------------------
@@ -312,6 +341,24 @@ parseFunctionSymbol s parseTerm = parse <?> "a function symbol"
                      -- we need to compensate for offset, since
                      -- lcIndex begins at 1
                      char '(' *> spaces *> argParser parseTerm (pfn (n + (m * 26)) AOne)
+
+kooParseFunctionSymbol ::     
+    ( PolyadicFunctionLanguage (FixLang lex) arg ret
+    , Incrementable lex arg
+    , Monad m
+    , Typeable ret
+    , Typeable arg
+    ) => String -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
+kooParseFunctionSymbol s parseTerm = parse <?> "a function symbol"
+    where parse = do    c <- oneOf s
+                        midx <- optionMaybe (char '_' >> posnumber)
+                        let Just n = lcIndex c 
+                            m = maybe 0 id midx
+                        -- an int K represents the symbol at index
+                        -- (k `mod` 26) with subscript (k `div` 26)
+                        -- we need to compensate for offset, since
+                        -- lcIndex begins at 1
+                        char '(' *> argParserNoParen parseTerm (pfn (n + (m * 26)) AOne) <* char ')'
 
 parseFunctionString ::     
     ( PolyadicStringFunctionLanguage (FixLang lex) arg ret
@@ -466,6 +513,15 @@ argParserNoParen ::
 argParserNoParen pt p = do t <- pt
                            incrementHeadNoParen pt p t
                                <|> return (p :!$: t)
+
+argParseOne ::
+    ( Typeable b
+    , Typeable t2
+    , Incrementable lex t2
+    , Monad m) => ParsecT String u m (FixLang lex t2) -> FixLang lex (t2 -> b) 
+            -> ParsecT String u m (FixLang lex b)
+argParseOne pt p = do   t <- pt
+                        return (p :!$: t)
 
 incrementHeadNoParen :: 
     ( Monad m

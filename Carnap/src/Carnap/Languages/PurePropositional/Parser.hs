@@ -113,10 +113,14 @@ howardSnyderOpts = extendedLetters
     where noatoms a = if isAtom a then unexpected "atomic sentence wrapped in parentheses" else return a
           hsDispatch opt rw = (wrappedWith '{' '}' (rw opt) <|> wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= noatoms
 
+kooDispatch opt rw = (wrappedWith '(' ')' (rw opt)) >>= noatoms
+    where noatoms a = if isBooleanBinary a then return a else unexpected "parentheses around an atom or negation"
 kooOpts :: Monad m => PurePropositionalParserOptions u m
-kooOpts = standardLetters
+kooOpts = PurePropositionalParserOptions
                 { opTable = kooOpTable
                 , atomicSentenceParser = sentenceLetterParser "PQRSTUVWXYZ"
+                , hasBooleanConstants = False
+                , parenRecur = kooDispatch
                 }
 
 --this parses as much formula as it can, but is happy to return an output if the
