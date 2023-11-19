@@ -14,6 +14,7 @@ import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
+import Carnap.Languages.Util.LanguageClasses
 
 data BelotSD = ConjIntro  
              | ConjElim1  | ConjElim2
@@ -109,6 +110,38 @@ instance Inference BelotSD PurePropLexicon (Form Bool) where
 
     isPremise (Pr _) = True
     isPremise _ = False
+
+    globalRestriction (Left ded) n CondIntro1 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+    globalRestriction (Left ded) n CondIntro2 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+    globalRestriction (Left ded) n NegeIntro1 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+    globalRestriction (Left ded) n NegeIntro2 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+    globalRestriction (Left ded) n NegeIntro3 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+    globalRestriction (Left ded) n NegeIntro4 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]
+    globalRestriction (Left ded) n NegeElim1 = Just $ 
+        fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+    globalRestriction (Left ded) n NegeElim2 = Just $ 
+        fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+    globalRestriction (Left ded) n NegeElim3 = Just $ 
+        fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+    globalRestriction (Left ded) n NegeElim4 = Just $ 
+        fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]
+    globalRestriction (Left ded) n DisjElim1 = Just $ 
+        fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+    globalRestriction (Left ded) n DisjElim2 = Just $ 
+        fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+    globalRestriction (Left ded) n DisjElim3 = Just $ 
+        fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+    globalRestriction (Left ded) n DisjElim4 = Just $ 
+        fitchAssumptionCheck n ded [([phin 1], [phin 3]), ([phin 2], [phin 3])]
+    globalRestriction (Left ded) n BicoIntro1 = Just $ 
+        fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+    globalRestriction (Left ded) n BicoIntro2 = Just $ 
+        fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+    globalRestriction (Left ded) n BicoIntro3 = Just $ 
+        fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+    globalRestriction (Left ded) n BicoIntro4 = Just $ 
+        fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+    globalRestriction _ _ _ = Nothing
 
     restriction (Pr prems) = Just (premConstraint prems)
     restriction _ = Nothing
