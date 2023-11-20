@@ -136,13 +136,42 @@ tryTrans w parser equiv tests wrapper ref fs = onEnter $
                              writeIORef ref False 
                              setFailure w wrapper
 
-submitTrans w opts i ref fs parser checker tests l = 
+tryTrans_wrap w parser equiv tests wrapper ref fs =
+                do
+                   elts <- getListOfElementsByTag wrapper "input"
+                --    elts <- case maybeElts of
+                --             Just xs -> return xs
+                --             Nothing -> Prelude.error "Failed to get list of elements"
+                   i <- case elts of
+                            (x:_) -> case x of
+                                Just element -> return element
+                                Nothing      -> Prelude.error "Empty element in the list"
+                            _     -> Prelude.error "Empty list of elements"
+                   Just ival  <- getValue (castToHTMLInputElement i)
+                   case parse (spaces *> parser <* eof) "" ival of
+                         Right f -> liftIO $ case tests f of
+                                                  Nothing -> checkForm f
+                                                  Just msg -> writeIORef ref False >> message ("Looks like " ++ msg ++ ".")
+                         Left e -> message "Sorry, try again---that formula isn't grammatical."
+   where checkForm f' 
+            | f' `elem` fs = do message "Perfect match!"
+                                writeIORef ref True
+                                setSuccess w wrapper
+            | any (\f -> f' `equiv` f) fs = do message "Correct!"
+                                               writeIORef ref True
+                                               setSuccess w wrapper
+            | otherwise = do message "Not quite. Try again?"
+                             writeIORef ref False 
+                             setFailure w wrapper
+
+submitTrans w opts i ref fs parser checker tests l =
         do isFinished <- liftIO $ readIORef ref
            (Just v) <- getValue (castToHTMLInputElement i)
            if isFinished
            then trySubmit w Translation opts l (TranslationDataOpts (serialize fs) (pack v) (M.toList opts)) True
            else if ("exam" `inOpts` opts) || ("nocheck" `inOpts` opts) 
-                then do 
+                then do
+                    -- liftIO $ tryTrans_wrap w parser checker tests wrapper ref fs
                     case parse (spaces *> parser <* eof) "" v of
                         Right f' | tests f' == Nothing && any (\f -> checker f f') fs -> 
                             trySubmit w Translation opts l (TranslationDataOpts (serialize fs) (pack v) (M.toList opts)) True
@@ -151,7 +180,9 @@ submitTrans w opts i ref fs parser checker tests l =
                         _ | "exam" `inOpts` opts -> 
                             trySubmit w Translation opts l (TranslationDataOpts (serialize fs) (pack v) (M.toList opts)) False
                         _ -> message "Something is wrong... try again?"
-                else message "Not yet finished (remember to press return to check your work before submitting!)"
+                else do
+                    Just wrapper <- getParentElement i
+                    liftIO $ tryTrans_wrap w parser checker tests wrapper ref fs
     where serialize :: Show a => [a] -> Text
           serialize = pack . tail . init . show --we drop the list brackets
 
