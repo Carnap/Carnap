@@ -88,6 +88,11 @@ activateTranslate w (Just (i,o,opts)) = do
                            ref <- newIORef False
                            let submit = submitTrans w opts i ref fs parser checker tests
                            btStatus <- createSubmitButton w bw submit opts
+
+                           resetButton <- questionButton w "Reset"
+                           appendChild bw (Just resetButton)
+                           resetIt <- newListener $ resetAnswer i o opts
+                           addListener resetButton click resetIt False
                            
                            -- Initally set input box to empty
                            setValue (castToHTMLInputElement i) (Just "")
@@ -106,7 +111,9 @@ activateTranslate w (Just (i,o,opts)) = do
                   _ -> print "translation was missing an option"
 activateChecker _ Nothing  = return ()
 
-
+resetAnswer :: Element -> Element -> M.Map String String -> EventM Element MouseEvent ()
+resetAnswer inputElem outputElem opts = liftIO $ do
+    setValue (castToHTMLInputElement inputElem) (Just "")
 tryTrans :: Eq (FixLang lex sem) => 
     Document -> Parsec String () (FixLang lex sem) -> BinaryTest lex sem -> UnaryTest lex sem
     -> Element -> IORef Bool -> [FixLang lex sem] -> EventM HTMLInputElement KeyboardEvent ()
