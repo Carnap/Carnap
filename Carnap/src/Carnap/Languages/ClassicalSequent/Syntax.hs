@@ -33,7 +33,7 @@ data Cedent :: k -> * -> * where
         SingleSuccedent  :: Typeable a => Cedent lang (a -> Succedent a)
 
 instance Schematizable (Cedent a) where
-        schematize NilAntecedent xs = "⊤"
+        schematize NilAntecedent xs = " "
         schematize NilSuccedent xs = "⊥"
         schematize NilCedent xs = "∅"
         schematize SingleAntecedent (x:xs) = x
