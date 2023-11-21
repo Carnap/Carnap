@@ -8,14 +8,15 @@ module Lib ( genericSendJSON, sendJSON, onEnter, onKey, doOnce, dispatchCustom, 
            , message, IOGoal(..), updateWithValue, submissionSource
            , assignmentKey, initialize, mutate, initializeCallback, initCallbackObj
            , toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton
-           , exclaimButton, expandButton, createSubmitButton, createButtonWrapper
+           , exclaimButton, expandButton, createSubmitButton, createButtonWrapper, createButtonWrapperConst
+           , createSymbolsPane, getShowSymbolsButton, createSymbolButton, insertSymbolClick
            , maybeNodeListToList, trySubmit, inOpts, rewriteWith, setStatus, setSuccess, setFailure
            , ButtonStatus(..) , keyString) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
 import qualified Data.ByteString.Lazy as BSL
-import Data.Text (pack)
+import Data.Text (pack, isInfixOf)
 import Data.Text.Encoding
 import Data.Tree as T
 import Data.IORef (IORef, readIORef)
@@ -428,6 +429,48 @@ createButtonWrapper w o = do (Just bw) <- createElement w (Just "div")
                              Just par <- getParentNode o
                              appendChild par (Just bw)
                              return bw
+
+createButtonWrapperConst w o = do (Just bw) <- createElement w (Just "div")
+                                  setAttribute bw "class" "buttonWrapper buttonWrapperConst"
+                                  (Just par) <- getParentNode o
+                                  appendChild par (Just bw)
+                                  return bw
+
+createSymbolsPane :: Document -> Element -> IO Element
+createSymbolsPane doc inputField = do
+    (Just pane) <- createElement doc (Just "div")
+    setAttribute pane "id" "symbols-pane"
+    setAttribute pane "style" "display: none; position: absolute; border: 1px solid black; padding: 10px; background-color: white;"
+
+    return pane
+
+getShowSymbolsButton :: Document -> Element -> IO Element
+getShowSymbolsButton doc symbolsPane = do
+    button <- expandButton doc "Symbols"
+
+    -- Toggle the display of the symbols pane
+    clickListener <- newListener $ liftIO $ do
+        (Just currentStyle) <- getAttribute symbolsPane "style"
+        let newStyle = if (fromString "none") `isInfixOf` currentStyle then "display: block;" else "display: none;"
+        setAttribute symbolsPane "style" newStyle
+    addListener button click clickListener False
+
+    return button
+
+createSymbolButton :: Document -> Element -> String -> EventM Element MouseEvent () -> IO Element
+createSymbolButton doc parent symbol clickHandler = do
+    (Just button) <- createElement doc (Just "button")
+    setInnerHTML button (Just symbol)
+    clickhand <- newListener clickHandler
+    addListener button click clickhand False
+    appendChild parent (Just button)
+    return button
+
+insertSymbolClick :: Element -> String -> EventM Element MouseEvent ()
+insertSymbolClick inputElement symbol = liftIO $ do
+    (Just val) <- getValue (castToHTMLInputElement inputElement)
+    let newValue = val ++ symbol
+    setValue (castToHTMLInputElement inputElement) (Just newValue)
 
 --------------------------------------------------------
 --1.7 Parsing

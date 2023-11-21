@@ -92,6 +92,12 @@
     stroke:#A9B7C0;
 }
 
+.buttonWrapperConst button:nth-child(n) {
+    background: #D6DCE0;
+    border:1px solid #D6DCE0;
+    color:black;
+}
+
 @keyframes buttonHover {
     0% {
         background:#a9b7c0;

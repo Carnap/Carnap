@@ -89,6 +89,18 @@ activateTranslate w (Just (i,o,opts)) = do
                            let submit = submitTrans w opts i ref fs parser checker tests
                            btStatus <- createSubmitButton w bw submit opts
 
+                            -- Create symbols pane and add buttons to it
+                           bw2 <- createButtonWrapperConst w o
+                           let createSymbolBtn symbol = createSymbolButton w bw2 symbol (insertSymbolClick i symbol)
+                           case (M.lookup "transtype" opts) of
+                                 (Just "prop") -> mapM createSymbolBtn ["→", "↔", "∧", "∨"]
+                                 _ -> mapM createSymbolBtn ["→", "↔", "∧", "∨", "∀", "∃", "≠"]
+                           symbolsPane <- createSymbolsPane w i
+                           appendChild symbolsPane (Just bw2)
+
+                           -- Get Show Symbols button
+                           showSymbolsBtn <- getShowSymbolsButton w symbolsPane                            
+
                            resetButton <- questionButton w "Reset"
                            appendChild bw (Just resetButton)
                            resetIt <- newListener $ resetAnswer i o opts
@@ -101,6 +113,8 @@ activateTranslate w (Just (i,o,opts)) = do
                            setInnerHTML o (Just problem)
                            mpar@(Just par) <- getParentNode o               
                            insertBefore par (Just bw) (Just o)
+                           appendChild bw (Just showSymbolsBtn)
+                           insertBefore par (Just symbolsPane) (Just o)
                            Just wrapper <- getParentElement o
                            setAttribute i "enterKeyHint" "go"
                            translate <- newListener $ tryTrans w parser checker tests wrapper ref fs
@@ -114,6 +128,7 @@ activateChecker _ Nothing  = return ()
 resetAnswer :: Element -> Element -> M.Map String String -> EventM Element MouseEvent ()
 resetAnswer inputElem outputElem opts = liftIO $ do
     setValue (castToHTMLInputElement inputElem) (Just "")
+
 tryTrans :: Eq (FixLang lex sem) => 
     Document -> Parsec String () (FixLang lex sem) -> BinaryTest lex sem -> UnaryTest lex sem
     -> Element -> IORef Bool -> [FixLang lex sem] -> EventM HTMLInputElement KeyboardEvent ()
