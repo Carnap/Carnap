@@ -25,7 +25,7 @@ import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.Text (pack)
 import Data.Either (rights)
-import Data.List (sort, sortOn, subsequences, intercalate, nub, zip4, intersperse)
+import Data.List (sort, sortOn, subsequences, intercalate, nub, zip4, zip5, intersperse)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens (toListOf, preview)
 import Control.Lens.Plated (children)
@@ -208,7 +208,7 @@ assembleTable w opts o orderedChildren valuations atomIndicies admissibleRows =
         do (table, thead, tbody) <- initTable w          
            gridRef <- makeGridRef (length orderedChildren) (length valuations)
            head <- toHead w opts atomIndicies orderedChildren
-           rows <- mapM (toRow' gridRef) (zip4 valuations [1..] admissibleRows givens)
+           rows <- mapM (toRow' gridRef) (zip5 valuations [1..] admissibleRows givens (reverse [1..(length valuations)]))
            mapM_ (appendChild tbody . Just) (reverse rows)
            appendChild thead (Just head)
            appendChild o (Just table)
@@ -280,12 +280,18 @@ tryCounterexample w opts ref i indicies counterexampleData =
 
 toRow :: Document -> Map String String -> [Int] 
     -> [Either Char PureForm] -> GridRef
-    -> (Int -> Bool, Int, Maybe Bool, [Maybe Bool])
+    -> (Int -> Bool, Int, Maybe Bool, [Maybe Bool], Int)
     -> IO Element
-toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) = 
+toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given,n2) = 
         do Just row <- createElement w (Just "tr")
            Just sep <- createElement w (Just "td")
+           Just sep2 <- createElement w (Just "td")
            setAttribute sep "class" "tttdSep"
+           setAttribute sep2 "class" "tttdSep"
+           Just rownum <- createElement w (Just "td")
+           setInnerHTML rownum (Just $ show n2)
+           appendChild row (Just rownum)
+           appendChild row (Just sep2)
            valTds <- mapM toValTd atomIndicies
            childTds <- mapM toChildTd (zip3 orderedChildren [1..] given)
            mapM_ (appendChild row . Just) (valTds ++ [sep] ++ childTds)
@@ -492,7 +498,12 @@ trueFalseOpts w opts turnstileMark mg =
 toHead w opts atomIndicies orderedChildren = 
         do Just row <- createElement w (Just "tr")
            Just sep <- createElement w (Just "th")
+           Just sep2 <- createElement w (Just "th")
+           Just num <- createElement w (Just "th")
            setAttribute sep "class" "ttthSep"
+           setAttribute sep2 "class" "ttthSep"
+           appendChild row (Just num)
+           appendChild row (Just sep2)
            atomThs <- mapM toAtomTh atomIndicies >>= rewriteThs opts
            childThs <- mapM (toChildTh w) orderedChildren >>= rewriteThs opts
            mapM_ (appendChild row . Just) atomThs
