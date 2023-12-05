@@ -31,8 +31,8 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 --------------------------------------------------------
 
 data KooQL =  SL KooSL
-                | UD  | UI  | EG  | EI | QN1 | QN2  | QN3  | QN4  
-                | LL1 | LL2 | EL1 | EL2 | ID  | SM  | ALL1 | ALL2
+                | UD  | UI  | EG  | EI | QN1 | QN2  | QN3  | QN4 | QN5 | QN6 | QN7 | QN8
+                | LL1 | LL2 | EL1 | EL2 | ID  | SM  | ALL1 | ALL2 | AV1 | AV2
                 | DER (ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))
                 | PR (Maybe [(ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))])
                deriving (Eq)
@@ -48,6 +48,10 @@ instance Show KooQL where
         show QN2     = "QN"
         show QN3     = "QN"
         show QN4     = "QN"
+        show QN5     = "QN"
+        show QN6     = "QN"
+        show QN7     = "QN"
+        show QN8     = "QN"
         show ID      = "Id"
         show LL1     = "LL"
         show LL2     = "LL"
@@ -57,6 +61,8 @@ instance Show KooQL where
         show EL2     = "EL"
         show SM      = "Sm"
         show (SL x)  = show x
+        show AV1     = "AV"
+        show AV2     = "AV"
 
 instance Inference KooQL PureLexiconFOL (Form Bool) where
      ruleOf (PR _)    = axiom
@@ -68,6 +74,10 @@ instance Inference KooQL PureLexiconFOL (Form Bool) where
      ruleOf QN2       = quantifierNegation !! 1
      ruleOf QN3       = quantifierNegation !! 2
      ruleOf QN4       = quantifierNegation !! 3
+     ruleOf QN5       = quantifierDoubleNegationReplace !! 0
+     ruleOf QN6       = quantifierDoubleNegationReplace !! 1
+     ruleOf QN7       = quantifierDoubleNegationReplace !! 2
+     ruleOf QN8       = quantifierDoubleNegationReplace !! 3
      ruleOf LL1       = leibnizLawVariations !! 0
      ruleOf LL2       = leibnizLawVariations !! 1
      ruleOf ALL1      = antiLeibnizLawVariations !! 0
@@ -76,6 +86,8 @@ instance Inference KooQL PureLexiconFOL (Form Bool) where
      ruleOf EL2       = euclidsLawVariations !! 1
      ruleOf ID        = eqReflexivity
      ruleOf SM        = eqSymmetry
+     ruleOf AV1       = quantifierExchange !! 0
+     ruleOf AV2       = quantifierExchange !! 2
 
      premisesOf (SL x) = map liftSequent (premisesOf x)
      premisesOf (DER r) = multiCutLeft r
@@ -100,18 +112,19 @@ parseKooQL :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String
 parseKooQL rtc = try quantRule <|> liftProp
     where liftProp = do r <- parseKooSL (defaultRuntimeDeductionConfig)
                         return (map SL r)
-          quantRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "EI", "QN","LL","EL","Id","Sm","D-"])
+          quantRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "EI", "QN","LL","EL","Id","Sm","AV", "D-"])
                          case r of 
                             r | r == "PR" -> return [PR $ problemPremises rtc]
                               | r == "UI" -> return [UI]
                               | r == "UD" -> return [UD]
                               | r == "EG" -> return [EG]
                               | r == "EI" -> return [EI]
-                              | r == "QN" -> return [QN1,QN2,QN3,QN4]
+                              | r == "QN" -> return [QN1,QN2,QN3,QN4,QN5,QN6,QN7,QN8]
                               | r == "LL" -> return [LL1,LL2,ALL1,ALL2]
                               | r == "Sm" -> return [SM]
                               | r == "EL" -> return [EL1,EL2]
                               | r == "Id" -> return [ID]
+                              | r == "AV" -> return [AV1,AV2]
                               | r == "D-" ->  do rn <- many1 upper
                                                  case M.lookup rn (derivedRules rtc) of
                                                     Just r  -> return [DER r]
