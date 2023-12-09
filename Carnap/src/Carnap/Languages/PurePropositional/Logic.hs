@@ -20,6 +20,7 @@ module Carnap.Languages.PurePropositional.Logic
     , parseGentzenPropNJ, GentzenPropNJ, gentzenPropNJCalc
     , parseGentzenPropNK, GentzenPropNK, gentzenPropNKCalc
 	, parseHuthAndRyanPropNK, HuthAndRyanPropNK, huthAndRyanPropNKCalc
+    , parseGallowSL
     , ofPropSys, ofPropTreeSys, ofPropSeqSys
     ) where
 

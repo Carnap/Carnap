@@ -1,6 +1,6 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.Gallow
-    ( gallowPLCalc, gallowPLPlusCalc ) where
+    ( gallowPLCalc, gallowPLPlusCalc, parseGallowPL ) where
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec

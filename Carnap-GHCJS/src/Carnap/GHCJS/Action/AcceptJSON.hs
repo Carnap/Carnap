@@ -1,7 +1,7 @@
 {-# LANGUAGE UndecidableInstances, FlexibleInstances, RankNTypes, OverloadedStrings, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 
 module Carnap.GHCJS.Action.AcceptJSON
-        ( acceptJSONAction) where
+        ( acceptJSONAction ) where
 
 import Data.Tree as T
 import qualified Data.Map as M
@@ -37,7 +37,8 @@ import Carnap.Languages.ClassicalSequent.Syntax
 acceptJSONAction ::  IO ()
 acceptJSONAction = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
-               initializeCallback checkJSON
+               initializeCallback initializeCallbackJS checkJSON
+               initializeCallback initializeCallbackJSGallow checkJSONGallow
                return ()
 
 checkJSON:: Value -> IO Value
@@ -62,6 +63,33 @@ checkJSON v = do let Success (s,d,c,p) = parse parseReply v
                                   Just seq@(_:|-: (SS s)) -> replyObject (s =* liftToSequent conc) (show seq) fb ""
                                   Nothing ->  replyObject False "" fb ""
                         (_,Left e) -> return $ replyObject False "" nilson "couldn't parse conclusion"
+
+    where serialize (Left e) = Left e
+          serialize (Right s) = Right $ show s
+          nilson = toJSON ("" :: String)
+
+checkJSONGallow:: Value -> IO Value
+checkJSONGallow v = do let Success (s,d,c,p) = parse parseReply v
+                       print (s,d,c,p)
+                       --- XXX See if this duplication can be avoided
+                       if s then case (parseProofData parsePairFOLGallow d, P.parse gallowPLFormulaParser "" c) of
+                                (Left e,_) -> return $ replyObject False "" nilson (show e)
+                                (Right ded,Right conc) -> 
+                                    do let Feedback mseq ds = toDisplaySequenceStructured processLineStructuredFitchHO ded
+                                       let fb = toJSON $ map serialize ds
+                                       return $ case mseq of 
+                                            Just seq@(_:|-: (SS s)) -> replyObject (s =* liftToSequent conc) (show seq) fb ""
+                                            Nothing ->  replyObject False "" fb ""
+                                (_,Left e) -> return $ replyObject False "" nilson "couldn't parse conclusion"
+                            else case (parseProofData parsePairPropGallow d, P.parse (purePropFormulaParser thomasBolducZach2019Opts) "" c) of
+                                (Left e,_) -> return $ replyObject False "" nilson (show e)
+                                (Right ded, Right conc) -> 
+                                    do let Feedback mseq ds = toDisplaySequenceStructured processLineStructuredFitch ded
+                                       let fb = toJSON $ map serialize ds
+                                       return $ case mseq of 
+                                            Just seq@(_:|-: (SS s)) -> replyObject (s =* liftToSequent conc) (show seq) fb ""
+                                            Nothing ->  replyObject False "" fb ""
+                                (_,Left e) -> return $ replyObject False "" nilson "couldn't parse conclusion"
 
     where serialize (Left e) = Left e
           serialize (Right s) = Right $ show s
@@ -120,6 +148,16 @@ parsePairFOL  (wff,jstr) = AssertLine <$> P.parse magnusFOLFormulaParser "" wff
                                       <*> return 0
                                       <*> (snd <$> P.parse (parseJstr $ parseMagnusQL (defaultRuntimeDeductionConfig)) "" jstr)
 
+parsePairPropGallow (wff,jstr) = AssertLine <$> P.parse (purePropFormulaParser thomasBolducZach2019Opts) "" wff
+                                      <*> (fst <$> P.parse (parseJstr $ parseGallowSL (defaultRuntimeDeductionConfig)) "" jstr)
+                                      <*> return 0
+                                      <*> (snd <$> P.parse (parseJstr $ parseGallowSL (defaultRuntimeDeductionConfig)) "" jstr)
+
+parsePairFOLGallow  (wff,jstr) = AssertLine <$> P.parse gallowPLFormulaParser "" wff
+                                      <*> (fst <$> P.parse (parseJstr $ parseGallowPL (defaultRuntimeDeductionConfig)) "" jstr)
+                                      <*> return 0
+                                      <*> (snd <$> P.parse (parseJstr $ parseGallowPL (defaultRuntimeDeductionConfig)) "" jstr)
+
 parseJstr r = do rule <- spaces *> r
                  deps <- spaces *> many (try parseIntPair <|> parseInt)
                  return (rule,deps)
@@ -158,18 +196,22 @@ instance (Schematizable (FixLang lex), Schematizable (ClassicalSequentOver lex))
 #ifdef __GHCJS__
 
 foreign import javascript unsafe "acceptJSONCallback_ = $1" initializeCallbackJS :: Callback (payload -> succ -> IO ()) -> IO ()
+foreign import javascript unsafe "acceptJSONCallbackGallow_ = $1" initializeCallbackJSGallow :: Callback (payload -> succ -> IO ()) -> IO ()
 --TODO: unify with other callback code in SequentCheck
 
 foreign import javascript unsafe "$1($2);" simpleCall :: JSVal -> JSVal -> IO ()
+foreign import javascript unsafe "console.error('could not parse input');" jsError :: IO ()
 
-initializeCallback :: (Value -> IO Value) -> IO ()
-initializeCallback f = do theCB <- asyncCallback2 (cb f)
-                          initializeCallbackJS theCB
+initializeCallback :: (Callback (JSVal -> JSVal -> IO ()) -> IO ()) -> ((Value -> IO Value) -> IO ())
+initializeCallback jscb f = do theCB <- asyncCallback2 (cb f)
+                               jscb theCB
     where cb f payload succ = do (Just raw) <- fromJSVal payload
-                                 let (Just val) = decode . fromStrict . encodeUtf8 $ raw
-                                 rslt <- f val
-                                 rslt' <- toJSVal rslt
-                                 simpleCall succ rslt'
+                                 let dc = decode . fromStrict . encodeUtf8 $ raw
+                                 case dc of
+                                    Just val -> do rslt <- f val
+                                                   rslt' <- toJSVal rslt
+                                                   simpleCall succ rslt'
+                                    Nothing -> jsError
 
 #else
 
