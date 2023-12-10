@@ -10,6 +10,8 @@ module Carnap.Languages.PurePropositional.Logic
     , parseHausmanSL, HausmanSL, hausmanSLCalc
     , parseMagnusSL, MagnusSL, magnusSLCalc
     , parseMagnusSLPlus, MagnusSLPlus, magnusSLPlusCalc
+    , parseRavenTFL, RavenTFL, ravenTFLCalc
+    , parseRavenTFLCore, RavenTFLCore, ravenTFL2019Calc
     , parseThomasBolducAndZachTFL, ThomasBolducAndZachTFL, thomasBolducAndZachTFLCalc
     , parseThomasBolducAndZachTFLCore, ThomasBolducAndZachTFLCore, thomasBolducAndZachTFL2019Calc
     , parseEbelsDugganTFL, EbelsDugganTFL, ebelsDugganTFLCalc

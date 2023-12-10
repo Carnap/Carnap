@@ -48,6 +48,7 @@ import Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
 import Carnap.Languages.PureFirstOrder.Logic.Magnus
 import Carnap.Languages.PureFirstOrder.Logic.OpenLogic
 import Carnap.Languages.PureFirstOrder.Logic.Gregory
+import Carnap.Languages.PureFirstOrder.Logic.Raven
 import Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach
 import Carnap.Languages.PureFirstOrder.Logic.Tomassi
 import Carnap.Languages.PureFirstOrder.Logic.Winkler 
@@ -91,6 +92,10 @@ ofFOLSys f sys | sys == "LogicBookPD"                     = Just $ f logicBookPD
                | sys == "magnusQL"                        = Just $ f magnusQLCalc
                | sys == "magnusQLPlus"                    = Just $ f magnusQLPlusCalc
                | sys == "montagueQC"                      = Just $ f montagueQCCalc
+               | sys == "ravenFOL"                        = Just $ f ravenFOLCalc
+               | sys == "ravenFOL2019"                    = Just $ f ravenFOL2019Calc
+               | sys == "ravenFOLCore"                    = Just $ f ravenFOLCoreCalc
+               | sys == "ravenFOLPlus2019"                = Just $ f ravenFOLPlus2019Calc
                | sys == "thomasBolducAndZachFOL"          = Just $ f thomasBolducAndZachFOLCalc
                | sys == "thomasBolducAndZachFOL2019"      = Just $ f thomasBolducAndZachFOL2019Calc
                | sys == "thomasBolducAndZachFOLCore"      = Just $ f thomasBolducAndZachFOLCoreCalc

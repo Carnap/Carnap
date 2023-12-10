@@ -104,6 +104,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.Magnus
                      , Carnap.Languages.PureFirstOrder.Logic.OpenLogic
                      , Carnap.Languages.PureFirstOrder.Logic.Gregory
+                     , Carnap.Languages.PureFirstOrder.Logic.Raven
                      , Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach
                      , Carnap.Languages.PureFirstOrder.Logic.Tomassi
                      , Carnap.Languages.PureFirstOrder.Logic.Winkler
