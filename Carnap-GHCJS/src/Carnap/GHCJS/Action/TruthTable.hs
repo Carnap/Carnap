@@ -353,8 +353,15 @@ type ContractableRowRef = (IORef (Map Int (Maybe Bool)), [Either Char PureForm])
 
 createPartialTruthTable :: Document -> ([PureForm],[PureForm]) -> (Element,Element) -> IORef Bool 
     -> Element -> Map String String -> IO (IO Bool, ContractableRowRef)
-createPartialTruthTable w (gs,fs) (i,o) _ _ opts = 
+createPartialTruthTable w (gs,fs) (i,o) ref bw opts = 
         do (table, thead, tbody) <- initTable w
+           case M.lookup "counterexample-to" opts of
+               Just "equivalence" -> addCounterexample w opts bw i ref atomIndicies (CounterexampleData isEquivCE Inequivalent isPlural False)
+               Just "inconsistency" -> addCounterexample w opts bw i ref atomIndicies (CounterexampleData isInconCE Consistent isPlural False)
+               Just "contradiction" -> addCounterexample w opts bw i ref atomIndicies (CounterexampleData isInconCE NonContradiction isPlural False)
+               Just "tautology" -> addCounterexample w opts bw i ref atomIndicies (CounterexampleData isTautCE NonTautology isPlural False)
+               Just "validity" -> addCounterexample w opts bw i ref atomIndicies (CounterexampleData isTautCE Invalid isPlural False)
+               _ -> do addCounterexample w opts bw i ref atomIndicies (CounterexampleData isTautCE GeneralCounterexample isPlural False)
            setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
            rRef <- makeRowRef (length orderedChildren)
            head <- toPartialHead
@@ -368,6 +375,11 @@ createPartialTruthTable w (gs,fs) (i,o) _ _ opts =
           orderedConstraints = concat . intersperse [Left ','] . map toOrderedChildren $ gs
           orderedSolvables = concat . intersperse [Left ','] . map toOrderedChildren $ fs
           orderedChildren = orderedConstraints ++ orderedSolvables
+          isTautCE v = and (map (not . unform . satisfies v) fs)
+          isEquivCE v = not (and vals || and (map not vals))
+              where vals = map (not . unform . satisfies v) fs
+          isInconCE v = and (map (unform . satisfies v) fs)
+          isPlural = length fs > 1
           blank = all (`elem` [' ','\t'])
           givens = case map packText . filter (not . blank) . lines <$> M.lookup "content" opts of
                        Just (r:rs) | length (expandRow orderedSolvables r) == length orderedSolvables
