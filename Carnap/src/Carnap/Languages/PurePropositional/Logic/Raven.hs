@@ -282,7 +282,7 @@ ravenTFLCalc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver (purePropFormulaParser thomasBolducZachOpts)
     , ndParseForm = purePropFormulaParser thomasBolducZachOpts
-    , ndNotation = ravenNotation
+    , ndNotation = dropOuterParens --to match the 2019 calc and make this basically a "Plus" version
     }
 
 ravenTFL2019Calc = mkNDCalc 
