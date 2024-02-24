@@ -154,8 +154,8 @@ instance Inference LogicBookSD PurePropLexicon (Form Bool) where
 
 parseLogicBookSD :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookSD]
 parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR", "Assumption" ,"&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I", ">I", "⊃I","→E", "⊃E","CE","->E"
-                                                          , "→E" , ">E" ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I"
-                                                          , "≡I" , "BE", "<->E", "↔E", "≡E", "R"]) <|> ((++) <$> string "A/" <*> many anyChar)
+                                                          , "→E" , ">E" ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "<>I", "↔I"
+                                                          , "≡I" , "BE", "<->E", "<>I", "↔E", "≡E", "R"]) <|> ((++) <$> string "A/" <*> many anyChar)
                           case r of
                             r | r `elem` ["AS"] -> return [AS ""]
                               | r `elem` ["A/>I", "A/->I"] -> return [AS "/⊃I"]
@@ -169,8 +169,8 @@ parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR", "Assumptio
                               | r `elem` ["~E","¬E","-E"]  -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
                               | r `elem` ["vI","\\/I","∨I"] -> return [DisjIntro1, DisjIntro2]
                               | r `elem` ["vE","\\/E","∨E"] -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
-                              | r `elem` ["BI","<->I","↔I","≡I"] -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                              | r `elem` ["BE","<->E","↔E","≡E"] -> return [BicoElim1, BicoElim2]
+                              | r `elem` ["BI","<->I", "<>I" ,"↔I","≡I"] -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                              | r `elem` ["BE","<->E", "<>I", "↔E","≡E"] -> return [BicoElim1, BicoElim2]
                             'A':'/':rest -> return [AS (" / " ++ rest)]
                             "R" -> return [Reiterate]
 
