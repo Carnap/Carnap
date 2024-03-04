@@ -13,6 +13,7 @@ import           TH.RelativePaths            (pathRelativeToCabalPackage)
 
 import           Util.Database
 import           Util.Handler                (addDocScripts)
+import Settings.Runtime (getBookLink)
 
 getRuleR :: Handler Html
 getRuleR = do derivedPropRules <- getPropDrList
@@ -88,6 +89,7 @@ ruleLayout widget = do
         mud <- maybeUserData
         mcourse <- maybeUserCourse
         mdoc <- maybeUserTextbookDoc
+        bookRoute <- runDB getBookLink
         let isInstructor = not $ null (mud >>= userDataInstructorId . entityVal)
         pc <- widgetToPageContent $ do
             toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")

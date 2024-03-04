@@ -103,6 +103,8 @@ chapterLayout widget = do
         mud <- maybeUserData
         mcourse <- maybeUserCourse
         mdoc <- maybeUserTextbookDoc
+        -- we're the book ;-)
+        let bookRoute = BookR
         let isInstructor = not $ null (mud >>= userDataInstructorId . entityVal)
         pc <- widgetToPageContent $ do
             toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
