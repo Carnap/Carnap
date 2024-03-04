@@ -21,6 +21,7 @@ import Control.Lens.Plated (children)
 import Text.Parsec
 import GHCJS.DOM
 import GHCJS.DOM.Element
+import GHCJS.DOM.HTMLElement (setInnerText)
 --the import below is needed to make ghc-mod work properly. GHCJS compiles
 --using the generated javascript FFI versions of 2.4.0, but those are
 --slightly different from the webkit versions of 2.4.0. In particular,
@@ -147,18 +148,33 @@ activateChecker w (Just (i,o,opts)) =
                          btStatus <- createSubmitButton w bw submit opts
                          (Just tree) <- createElement w (Just "div")
                          appendChild o (Just tree)
-                         setInnerHTML tree (Just $ sf f)                   
+                         setInnerHTML tree (Just $ sf f)
                          setAttribute tree "class" "tree"
-                         mpar@(Just par) <- getParentNode o               
-                         insertBefore par (Just bw) (Just o)                    
+                         mpar@(Just par) <- getParentNode o
+                         insertBefore par (Just bw) (Just o)
                          match <- newListener $ tryMatch tree ref w sf opts
                          (Just w') <- getDefaultView w
+
+                         resetButton <- createElement w (Just "button")
+                         setInnerText resetButton (Just "Reset")
+                         appendChild bw (Just resetButton)
+                         resetListener <- newListener $ resetAction tree ref w sf opts
+                         maybe (putStrLn "Reset button is not created") (\buttonElement -> addListener buttonElement click resetListener False) resetButton
+                        --  addListener resetButton click resetListener False
+
                          doOnce i keyUp False $ liftIO $ btStatus Edited
                          setAttribute i "enterKeyHint" "go"
-                         addListener i keyUp match False                  
+                         addListener i keyUp match False
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "syntax check was missing an option"
 activateChecker _ Nothing  = return ()
+
+resetAction :: Element -> IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> Document -> (PureForm -> String) -> M.Map String String -> EventM HTMLInputElement e ()
+resetAction tree ref w sf opts = do
+    (f,_,_,_) <- liftIO $ readIORef ref
+    liftIO $ writeIORef ref (f,[(f,0)], T.Node (f,0) [], 0)
+    setInnerHTML tree (Just $ sf f)
+
 
 submitSyn :: IsEvent e => Document -> M.Map String String -> IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> String -> EventM HTMLInputElement e ()
 submitSyn w opts ref l = do (f,forms,_,_) <- liftIO $ readIORef ref
