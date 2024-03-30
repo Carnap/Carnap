@@ -171,6 +171,7 @@ gallowPLParserOptions = magnusFOLParserOptions { freeVarParser = parseFreeVar "w
                                                           <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
                                              , opTable = calgaryOpTable
                                              , finalValidation = \x -> if isOpenFormula x then unexpected "unbound variable" else return ()
+                                             , hasBooleanConstants = True
                                              }
 
 gamutNDParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
