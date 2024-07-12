@@ -45,6 +45,7 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
                                      , popout :: Bool -- Should the checker be able to be put in a new window?
                                      , hideNumbering :: Bool -- Should the checker hide the line numbering?
                                      , tests :: [String] --Should the checker apply tests to the conclusion?
+                                     , firstOrder :: Bool -- Should the checker use first-order logic?
                                      }
 
 optionsFromMap opts = CheckerOptions { submit = Nothing
@@ -77,6 +78,9 @@ optionsFromMap opts = CheckerOptions { submit = Nothing
                                       , popout = "popout" `elem` optlist
                                       , hideNumbering = "hideNumbering" `elem` optlist
                                       , tests = case M.lookup "tests" opts of Just s -> words s; Nothing -> []
+                                      , firstOrder = case M.lookup "system" opts of 
+                                            Just "firstOrder" -> True
+                                            _ -> False
                                       }
                 where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
@@ -142,6 +146,25 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                                                    Nothing -> return ()
                    addListener bt click btlistener True
                _ -> return ()
+          
+            -- Create symbols pane and add buttons to it
+           bw2 <- createButtonWrapperConst w o
+           let createSymbolBtn symbol = createSymbolButton w bw2 symbol (insertTextClick i symbol)
+           
+           mapM createSymbolBtn (if firstOrder options then ["→", "↔", "∧", "∨", "∀", "∃", "≠"] else ["→", "↔", "∧", "∨"])
+           symbolsPane <- createSymbolsPane w i
+           appendChild symbolsPane (Just bw2)
+
+           -- Get and add Show Symbols button
+           showSymbolsBtn <- getShowSymbolsButton w symbolsPane
+           appendChild bw (Just showSymbolsBtn)
+
+           -- Show symbols when right-click text area
+           addRightClickRevealer w symbolsPane i
+
+           -- Add hidden symbols pane
+           appendChild par (Just symbolsPane)
+
            kblistener <- newListener $ updateWithValue (\s -> updateres options w ref s (g,fd))
            addListener i keyUp kblistener False
            when (popout options) $ do
@@ -202,6 +225,12 @@ insertText f = do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent
                               insertion = f v pos
                           setValue t $ Just ( pre ++ insertion ++ post )
                           setSelectionEnd t (length (pre ++ insertion))
+
+insertTextClick :: Element -> String -> EventM Element MouseEvent ()
+insertTextClick textArea s = liftIO $ do
+    (Just val) <- getValue (castToHTMLTextAreaElement textArea)
+    let newValue = val ++ s
+    setValue (castToHTMLTextAreaElement textArea) (Just newValue)
 
 reindent :: EventM HTMLTextAreaElement KeyboardEvent ()
 reindent = insertText ws

@@ -21,6 +21,10 @@
 
 .exercise > span:nth-child(2) { right:10pt;}
 
+.buttonWrapper {
+    width: fit-content;
+}
+
 .buttonWrapper button {
     height:2em;
     margin:0px;
@@ -64,6 +68,21 @@
     stroke:white;
 }
 
+.buttonWrapperConst button:nth-child(n) {
+    background: #D6DCE0;
+    border:1px solid #D6DCE0;
+    color:black;
+    width: 28px;
+    height: 28px;
+}
+
+.symbolsPane {
+    min-width:100%;
+    float: inline-end;
+    margin-top: 5px;
+    justify-content: center;
+}
+
 .buttonWrapper button:hover,
 .buttonWrapper button[data-carnap-exercise-status="submitted"]
 {
@@ -90,12 +109,6 @@
 .buttonWrapper button[data-carnap-exercise-status="submitted"] svg .filler {
     fill:#A9B7C0;
     stroke:#A9B7C0;
-}
-
-.buttonWrapperConst button:nth-child(n) {
-    background: #D6DCE0;
-    border:1px solid #D6DCE0;
-    color:black;
 }
 
 @keyframes buttonHover {
@@ -183,8 +196,7 @@
 
 /* This is what will need to be the locus of responsive resizing */
 [data-carnap-type="proofchecker"] {
-    display:inline-block;
-    vertical-align:top;
+    display:block;
     position: relative;
     width:500px;
     min-height:110pt;
