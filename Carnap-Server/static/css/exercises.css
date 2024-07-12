@@ -529,6 +529,50 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     text-align:center;
 }
 
+[data-carnap-type="truthtable"] tr[highlightRow="true"] {
+    background-color: yellow;
+}
+
+
+[data-carnap-type="truthtable"] td[class="rowNumber"] {
+    border-width: 4px;
+    border-color: black;
+    cursor:pointer;
+    padding: 2px;
+    background-color: aliceblue;
+}
+
+[data-carnap-type="truthtable"] td[class="rowNumber"]:hover {
+    background: #0073a5 !important;
+    -webkit-transition: all 0.3s;
+    -moz-transition: all 0.3s;
+    -o-transition: all 0.3s;
+    transition: all 0.3s;
+}
+
+[data-carnap-type="truthtable"] th[clickabletableheader="true"] {
+    border-width: 1px;
+    border-color: black;
+    cursor:pointer;
+    padding: 2px;
+    background-color: aliceblue;
+}
+
+[data-carnap-type="truthtable"] td[highlightCell="true"] {
+    background-color: cornflowerblue;
+}
+
+
+[data-carnap-type="truthtable"] th[clickabletableheader="true"]:hover {
+    background: #0073a5 !important;
+    -webkit-transition: all 0.3s;
+    -moz-transition: all 0.3s;
+    -o-transition: all 0.3s;
+    transition: all 0.3s;
+}
+
+
+
 [data-carnap-type="treedeductionchecker"] .jsonDisplay,
 [data-carnap-type="sequentchecker"] .jsonDisplay {
     border: 1px dashed;

@@ -10,7 +10,7 @@ module Lib ( genericSendJSON, sendJSON, onEnter, onKey, doOnce, dispatchCustom, 
            , toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton
            , exclaimButton, expandButton, createSubmitButton, createButtonWrapper, createButtonWrapperConst
            , createSymbolsPane, getShowSymbolsButton, createSymbolButton, insertSymbolClick
-           , maybeNodeListToList, trySubmit, inOpts, rewriteWith, setStatus, setSuccess, setFailure
+           , maybeNodeListToList, maybeHtmlCollectionToList, trySubmit, inOpts, rewriteWith, setStatus, setSuccess, setFailure
            , ButtonStatus(..) , keyString) where
 
 import Data.Aeson

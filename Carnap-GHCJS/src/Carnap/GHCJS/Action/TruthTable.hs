@@ -16,13 +16,18 @@ import Carnap.Languages.PurePropositional.Logic (PropSequentCalc)
 import Carnap.Languages.Util.LanguageClasses
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
-import GHCJS.DOM.HTMLSelectElement (castToHTMLSelectElement, getValue, setSelectedIndex) 
+import GHCJS.DOM.NodeList
+import GHCJS.DOM.HTMLTableElement (getRows, castToHTMLTableElement)
+import GHCJS.DOM.HTMLTableRowElement (getCells, castToHTMLTableRowElement)
+import GHCJS.DOM.HTMLTableCellElement (getCellIndex, castToHTMLTableCellElement)
+import GHCJS.DOM.HTMLSelectElement (castToHTMLSelectElement, getValue, setSelectedIndex)
 import GHCJS.DOM.Window (alert, prompt)
 import GHCJS.DOM.Document (createElement, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, getParentElement, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
+import Data.Maybe (catMaybes)
 import Data.Text (pack)
 import Data.Either (rights)
 import Data.List (sort, sortOn, subsequences, intercalate, nub, zip4, zip5, intersperse)
@@ -286,9 +291,13 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given,n2) =
         do Just row <- createElement w (Just "tr")
            Just sep <- createElement w (Just "td")
            Just sep2 <- createElement w (Just "td")
+           setAttribute row "highlightRow" "false"
            setAttribute sep "class" "tttdSep"
            setAttribute sep2 "class" "tttdSep"
            Just rownum <- createElement w (Just "td")
+           setAttribute rownum "class" "rowNumber"
+           onClickHighlightRow <- newListener $ toggleRowHighlight row
+           addListener rownum click onClickHighlightRow False
            setInnerHTML rownum (Just $ show n2)
            appendChild row (Just rownum)
            appendChild row (Just sep2)
@@ -342,6 +351,14 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given,n2) =
                                  Just True -> liftIO $ modifyIORef gridRef (M.insert (m,n) (tv, Just True))
                                  Just False -> liftIO $ modifyIORef gridRef (M.insert (m,n) (not tv, Just False))
                                  Nothing -> liftIO $ modifyIORef gridRef (M.insert (m,n) (False, Nothing))
+          toggleRowHighlight :: Element -> EventM Element MouseEvent ()
+          toggleRowHighlight trElement = do
+                                       isRowHighlighted <- getAttribute trElement "highlightRow"
+                                       case isRowHighlighted of
+                                            Just "true" -> liftIO $ setAttribute trElement "highlightRow" "false"
+                                            Just "false" -> liftIO $ setAttribute trElement "highlightRow" "true"
+                                            Nothing -> liftIO $ setAttribute trElement "highlightRow" "false"
+
 
 ----------------------------
 --  Partial Truth Tables  --
@@ -529,13 +546,58 @@ toHead w opts atomIndicies orderedChildren =
 toChildTh :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => Document -> Either Char (FixLang f a) -> IO Element
 toChildTh w c = 
         do Just th <- createElement w (Just "th")
+           onClickHighlightCol <- newListener $ eventListenerWrapper (castToHTMLTableCellElement th)
+           addListener th click onClickHighlightCol False
            case c of
                Left c'  -> do if c' `elem` ['⊢','⊨','⊭'] 
-                                  then setAttribute th "class" "ttTurstile" 
+                                  then do setAttribute th "class" "ttTurstile" 
+                                          setAttribute th "clickableTableHeader" "true"
                                   else return ()
                               setInnerHTML th (Just [c'])
-               Right f  -> setInnerHTML th (Just $ mcOf f)
+               Right f  -> do setInnerHTML th (Just $ mcOf f)
+                              setAttribute th "clickableTableHeader" "true"
            return th
+        where
+            eventListenerWrapper:: HTMLTableCellElement -> EventM Element MouseEvent ()
+            eventListenerWrapper headerElement = do
+                columnIndex <- getCellIndex headerElement
+                maybeTable <- closest headerElement "table"
+                table <- case maybeTable of
+                        Just t -> return t
+                        Nothing -> Prelude.error "no table"
+                let tableElement = castToHTMLTableElement table
+                rows <- getRows tableElement
+                maybeRows <- maybeHtmlCollectionToList rows
+                let rowCollection = catMaybes maybeRows
+                indexToToggle <- getCellIndex headerElement
+                liftIO $ setAttribute tableElement "isTable" "true"
+                isClickableHeader <- getAttribute headerElement "clickableTableHeader"
+                case isClickableHeader of
+                    Just "true" -> liftIO $ processRows rowCollection indexToToggle
+                    _ -> return ()
+            processRows:: [Element] -> Int -> IO ()
+            processRows (x:xs) indexToToggle = do
+                let rowElement = castToHTMLTableRowElement x
+                maybeCells <- getCells rowElement
+                allCells <- maybeHtmlCollectionToList maybeCells
+                let cells = catMaybes allCells
+                liftIO $ toggleCells cells indexToToggle
+                liftIO $ processRows xs indexToToggle
+            toggleCells:: [Element] -> Int -> IO ()
+            toggleCells (x:xs) indexToToggle = do
+                let currCell = castToHTMLTableCellElement x
+                currIndex <- getCellIndex currCell
+                isHighlighted <- getAttribute currCell "highlightCell"
+                if indexToToggle == currIndex then do
+                    case isHighlighted of
+                        Just "true" -> liftIO $ setAttribute currCell "highlightCell" "false"
+                        Just "false" -> liftIO $ setAttribute currCell "highlightCell" "true"
+                        Nothing -> liftIO $ setAttribute currCell "highlightCell" "true"
+                        _ -> liftIO $ setAttribute currCell "highlightCell" "true"
+                else return ()
+                liftIO $ toggleCells xs indexToToggle
+            toggleCells [] _ = return ()
+
 
 -----------
 --  BPT  --
