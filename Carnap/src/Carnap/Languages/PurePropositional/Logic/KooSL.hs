@@ -189,15 +189,12 @@ parseKooSLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool)
 parseKooSLProof rtc = toDeductionMontague (parseKooSL rtc) (kooSLFormulaParser kooOpts)
 
 kooSLNotation :: String -> String
-kooSLNotation x = case runParser altParser 0 "" x of
-                        Left e -> show e
-                        Right s -> s
-    where altParser = do s <- handleChar <|> fallback
-                         rest <- (eof >> return "") <|> altParser
-                         return $ s ++ rest
-          handleChar = (char '⊢' >> return "∴")
-          fallback = do c <- anyChar 
-                        return [c]
+kooSLNotation = map replace
+    where
+        replace '⊢' = '∴'
+        replace '¬' = '~'
+        replace '@' = '3'
+        replace c = c
 
 kooSLCalc = mkNDCalc
     { ndRenderer = MontagueStyle
