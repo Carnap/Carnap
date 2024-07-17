@@ -151,7 +151,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            bw2 <- createButtonWrapperConst w o
            let createSymbolBtn symbol = createSymbolButton w bw2 symbol (insertTextClick i symbol)
            
-           mapM createSymbolBtn (if firstOrder options then ["→", "↔", "∧", "∨", "∀", "∃", "≠"] else ["→", "↔", "∧", "∨"])
+           mapM createSymbolBtn (if firstOrder options then ["→", "↔", "∧", "∨", "∀", "∃", "≠", "~"] else ["→", "↔", "∧", "∨", "~"])
            symbolsPane <- createSymbolsPane w i
            appendChild symbolsPane (Just bw2)
 
