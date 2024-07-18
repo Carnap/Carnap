@@ -77,7 +77,6 @@ renderTreeMontague ded w calc = treeToElement asLine asSubproof
             (theWrapper, theLine, theForm, theRule) <- lineBase w calc n (displayVia calc f) (Just (r, deps)) "assertion"
             appendChild theLine (Just theForm)
             appendChild theLine (Just theRule)
-            setAttribute theWrapper "class" "line"  -- Add this line
             return theWrapper
 
         asLine (n, PartialLine esf _ _) = do 
@@ -85,7 +84,6 @@ renderTreeMontague ded w calc = treeToElement asLine asSubproof
             (theWrapper, theLine, theForm, theRule) <- lineBase w calc n content norule "assertion"
             appendChild theLine (Just theForm)
             appendChild theLine (Just theRule)
-            setAttribute theWrapper "class" "line"  -- Add this line
             return theWrapper
 
         asLine (n, ShowWithLine f _ r deps) = do 
@@ -95,7 +93,6 @@ renderTreeMontague ded w calc = treeToElement asLine asSubproof
             appendChild theLine (Just theHead)
             appendChild theLine (Just theForm)
             appendChild theLine (Just theRule)
-            setAttribute theWrapper "class" "line"  -- Add this line
             return theWrapper
 
         asLine (n, ShowLine f _) = do
@@ -109,18 +106,15 @@ renderTreeMontague ded w calc = treeToElement asLine asSubproof
                 setAttribute theLine "class" "show"  -- Only apply 'show' class to the whole line
             else do
                 setAttribute theLine "class" "show"
-            setAttribute theWrapper "class" "line"  -- Add this line
             return theWrapper
 
         asLine (n, QedLine r _ deps) = do 
             (theWrapper, theLine, _, theRule) <- lineBase w calc n noform (Just (r, deps)) "qed"
             appendChild theLine (Just theRule)
-            setAttribute theWrapper "class" "line"  -- Add this line
             return theWrapper
 
         asLine _ = do 
             (Just sl) <- createElement w (Just "div")
-            setAttribute sl "class" "line"  -- Add this line
             return sl
 
         asSubproof l ls = do 
