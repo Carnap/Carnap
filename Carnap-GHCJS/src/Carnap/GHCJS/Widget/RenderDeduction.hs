@@ -61,50 +61,70 @@ renderTreeFitch ded w calc = treeToElement asLine asSubproof
 
 --this is for Kalish and Montague Proofs
 renderTreeMontague ded w calc = treeToElement asLine asSubproof
-    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w calc n (displayVia calc f) (Just (r,deps)) "assertion"
-                                                appendChild theLine (Just theForm)
-                                                appendChild theLine (Just theRule)
-                                                return theWrapper
+    where 
+        -- Updated displayVia function to handle single-place predicates without parentheses
+        displayVia calc = Just . dropWhile (== ' ') . adjustPredicateDisplay . ndNotation calc . show
 
-          asLine (n,PartialLine esf _ _ ) = do let content = either parenWrap (displayVia calc) esf
-                                               (theWrapper,theLine,theForm,theRule) <- lineBase w calc n content norule "assertion"
-                                               appendChild theLine (Just theForm)
-                                               appendChild theLine (Just theRule)
-                                               return theWrapper
+        -- Helper function to adjust the display of predicates
+        adjustPredicateDisplay :: String -> String
+        adjustPredicateDisplay s =
+            let (pred, rest) = span (/= '(') s
+            in if null rest || ',' `elem` rest
+               then s
+               else pred ++ drop 1 (takeWhile (/= ')') rest)
 
-          asLine (n,ShowWithLine f _ r deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w calc n (displayVia calc f) (Just (r,deps)) "show"
-                                                  (Just theHead) <- createElement w (Just "span")
-                                                  setInnerHTML theHead (Just $ "Show: ")
-                                                  appendChild theLine (Just theHead)
-                                                  appendChild theLine (Just theForm)
-                                                  appendChild theLine (Just theRule)
-                                                  return theWrapper
+        asLine (n, AssertLine f r _ deps) = do 
+            (theWrapper, theLine, theForm, theRule) <- lineBase w calc n (displayVia calc f) (Just (r, deps)) "assertion"
+            appendChild theLine (Just theForm)
+            appendChild theLine (Just theRule)
+            return theWrapper
 
-          asLine (n,ShowLine f _)   = do (theWrapper,theLine,theForm,_) <- lineBase w calc n (displayVia calc f) norule "show"
-                                         (Just theHead) <- createElement w (Just "span")
-                                         setInnerHTML theHead (Just $ "Show: ")
-                                         appendChild theLine (Just theHead)
-                                         appendChild theLine (Just theForm)
-                                         if complete n then do
-                                            setAttribute theLine "class" "show-cross" 
-                                         else do
-                                            setAttribute theLine "class" "show"
-                                         return theWrapper
+        asLine (n, PartialLine esf _ _) = do 
+            let content = either parenWrap (displayVia calc) esf
+            (theWrapper, theLine, theForm, theRule) <- lineBase w calc n content norule "assertion"
+            appendChild theLine (Just theForm)
+            appendChild theLine (Just theRule)
+            return theWrapper
 
-          asLine (n,QedLine r _ deps) = do (theWrapper,theLine,_,theRule) <- lineBase w calc n noform (Just (r,deps)) "qed"
-                                           appendChild theLine (Just theRule)
-                                           return theWrapper
+        asLine (n, ShowWithLine f _ r deps) = do 
+            (theWrapper, theLine, theForm, theRule) <- lineBase w calc n (displayVia calc f) (Just (r, deps)) "show"
+            (Just theHead) <- createElement w (Just "span")
+            setInnerHTML theHead (Just $ "Show ")
+            appendChild theLine (Just theHead)
+            appendChild theLine (Just theForm)
+            appendChild theLine (Just theRule)
+            return theWrapper
 
-          asLine _ = do (Just sl) <- createElement w (Just "div")
-                        return sl
+        asLine (n, ShowLine f _) = do
+            (theWrapper, theLine, theForm, _) <- lineBase w calc n (displayVia calc f) norule "show"
+            (Just theHead) <- createElement w (Just "span")
+            setInnerHTML theHead (Just "Show ")
+            setAttribute theHead "class" "show-cross"  -- Apply the strikethrough class to "Show "
+            appendChild theLine (Just theHead)
+            appendChild theLine (Just theForm)
+            if complete n then do
+                setAttribute theLine "class" "show"  -- Only apply 'show' class to the whole line
+            else do
+                setAttribute theLine "class" "show"
+            return theWrapper
 
-          asSubproof l ls = do setAttribute l "class" "subproof"
-                               mapM_ (appendChild l . Just) ls
+        asLine (n, QedLine r _ deps) = do 
+            (theWrapper, theLine, _, theRule) <- lineBase w calc n noform (Just (r, deps)) "qed"
+            appendChild theLine (Just theRule)
+            return theWrapper
 
-          -- check whether montague deduction starting at line x is complete
-          complete x = case toProofTreeMontague ded x of 
-                            Left _ -> False
-                            Right _ -> True
+        asLine _ = do 
+            (Just sl) <- createElement w (Just "div")
+            return sl
+
+        asSubproof l ls = do 
+            setAttribute l "class" "subproof"
+            mapM_ (appendChild l . Just) ls
+
+        -- check whether montague deduction starting at line x is complete
+        complete x = case toProofTreeMontague ded x of 
+            Left _ -> False
+            Right _ -> True
 
 --The basic parts of a line, with Maybes for the fomula and the rule-dependency pair.
 -- lineBase :: (Show a, Show b) => 
