@@ -129,13 +129,25 @@ resetAnswer :: Element -> Element -> M.Map String String -> EventM Element Mouse
 resetAnswer inputElem outputElem opts = liftIO $ do
     setValue (castToHTMLInputElement inputElem) (Just "")
 
+kooSLNotation :: String -> String
+kooSLNotation = map replace
+    where
+        replace '⊢' = '∴'
+        replace '¬' = '~'
+        replace '@' = '∀'
+        replace '3' = '∃'
+        replace c = c
+
+
 tryTrans :: Eq (FixLang lex sem) => 
     Document -> Parsec String () (FixLang lex sem) -> BinaryTest lex sem -> UnaryTest lex sem
     -> Element -> IORef Bool -> [FixLang lex sem] -> EventM HTMLInputElement KeyboardEvent ()
 tryTrans w parser equiv tests wrapper ref fs = onEnter $ 
                 do Just t <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
                    Just ival  <- getValue t
-                   case parse (spaces *> parser <* eof) "" ival of
+                   let transformedInput = kooSLNotation ival  -- Apply kooSLNotation here
+                   setValue t (Just transformedInput)  -- Update the input box with the transformed input
+                   case parse (spaces *> parser <* eof) "" transformedInput of
                          Right f -> liftIO $ case tests f of
                                                   Nothing -> checkForm f
                                                   Just msg -> writeIORef ref False >> message ("Looks like " ++ msg ++ ".")
@@ -154,16 +166,15 @@ tryTrans w parser equiv tests wrapper ref fs = onEnter $
 tryTrans_wrap w parser equiv tests wrapper ref fs =
                 do
                    elts <- getListOfElementsByTag wrapper "input"
-                --    elts <- case maybeElts of
-                --             Just xs -> return xs
-                --             Nothing -> Prelude.error "Failed to get list of elements"
                    i <- case elts of
                             (x:_) -> case x of
                                 Just element -> return element
                                 Nothing      -> Prelude.error "Empty element in the list"
                             _     -> Prelude.error "Empty list of elements"
                    Just ival  <- getValue (castToHTMLInputElement i)
-                   case parse (spaces *> parser <* eof) "" ival of
+                   let transformedInput = kooSLNotation ival  -- Apply kooSLNotation here
+                   setValue (castToHTMLInputElement i) (Just transformedInput)  -- Update the input box with the transformed input
+                   case parse (spaces *> parser <* eof) "" transformedInput of
                          Right f -> liftIO $ case tests f of
                                                   Nothing -> checkForm f
                                                   Just msg -> writeIORef ref False >> message ("Looks like " ++ msg ++ ".")
