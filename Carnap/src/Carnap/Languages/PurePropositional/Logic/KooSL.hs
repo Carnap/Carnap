@@ -193,7 +193,8 @@ kooSLNotation = map replace
     where
         replace '⊢' = '∴'
         replace '¬' = '~'
-        replace '@' = '3'
+        replace '@' = '∀'
+        replace '3' = '∃'
         replace c = c
 
 kooSLCalc = mkNDCalc

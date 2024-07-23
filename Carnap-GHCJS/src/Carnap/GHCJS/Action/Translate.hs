@@ -7,6 +7,7 @@ import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.Core.Data.Types (FixLang, Form, Term, BoundVars, FirstOrderLex)
 import Carnap.Languages.PurePropositional.Logic (ofPropSys, ofPropTreeSys)
+import Carnap.Languages.PurePropositional.Logic.KooSL (kooSLNotation)
 import Carnap.Languages.ModalPropositional.Logic (ofModalPropSys)
 import Carnap.Languages.PureSecondOrder.Logic (ofSecondOrderSys) 
 import Carnap.Languages.SetTheory.Logic (ofSetTheorySys, ofSetTheoryTreeSys)
@@ -36,9 +37,10 @@ import GHCJS.DOM.Document (Document,createElement, getBody, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore, getParentElement)
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
-import Control.Monad (mplus)
+import Control.Monad (mplus, void)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-
+import GHCJS.DOM.EventM (on)
+import Control.Monad.IO.Class (liftIO)
 translateAction :: IO ()
 translateAction = initElements getTranslates activateTranslate
 
@@ -49,7 +51,7 @@ activateTranslate :: Document -> Maybe (Element, Element, M.Map String String) -
 activateTranslate w (Just (i,o,opts)) = do
         case (M.lookup "transtype" opts, M.lookup "system" opts) of
             (Just "prop", mparser) -> maybe noSystem id $ ((\it -> activateWith (tbParseForm it) propChecker (propTests testlist)) `ofPropTreeSys` sys)
-                                                  `mplus` Just (activateWith formParser propChecker (propTests testlist))
+                                                    `mplus` Just (activateWith formParser propChecker (propTests testlist))
                 where formParser = maybe (purePropFormulaParser standardLetters) id (mparser >>= ofPropSys ndParseForm)
             (Just "first-order", mparser) -> maybe noSystem id $ ((\it -> activateWith (ndParseForm it) folChecker noTests) `ofSetTheorySys` sys)
                                                          `mplus` ((\it -> activateWith (tbParseForm it) folChecker noTests) `ofSetTheoryTreeSys` sys)
@@ -89,17 +91,22 @@ activateTranslate w (Just (i,o,opts)) = do
                            let submit = submitTrans w opts i ref fs parser checker tests
                            btStatus <- createSubmitButton w bw submit opts
 
-                            -- Create symbols pane and add buttons to it
+                            -- Set up continuous symbol transformation
+                           void $ on (castToHTMLInputElement i) input $ do
+                               Just ival <- getValue (castToHTMLInputElement i)
+                               let transformedInput = kooSLNotation ival
+                               setValue (castToHTMLInputElement i) (Just transformedInput)
+                               liftIO $ btStatus Edited
+                            -- ... (rest of the setup remains the same)
                            bw2 <- createButtonWrapperConst w o
                            let createSymbolBtn symbol = createSymbolButton w bw2 symbol (insertSymbolClick i symbol)
                            case (M.lookup "transtype" opts) of
                                  (Just "prop") -> mapM createSymbolBtn ["→", "↔", "∧", "∨"]
                                  _ -> mapM createSymbolBtn ["→", "↔", "∧", "∨", "∀", "∃", "≠"]
                            symbolsPane <- createSymbolsPane w i
+                            -- Get Show Symbols button
+                           showSymbolsBtn <- getShowSymbolsButton w symbolsPane     
                            appendChild symbolsPane (Just bw2)
-
-                           -- Get Show Symbols button
-                           showSymbolsBtn <- getShowSymbolsButton w symbolsPane                            
 
                            resetButton <- questionButton w "Reset"
                            appendChild bw (Just resetButton)
@@ -114,13 +121,14 @@ activateTranslate w (Just (i,o,opts)) = do
                            mpar@(Just par) <- getParentNode o               
                            insertBefore par (Just bw) (Just o)
                            appendChild bw (Just showSymbolsBtn)
-                           insertBefore par (Just symbolsPane) (Just o)
+                        --    insertBefore par (Just symbolsPane) (Just o)
+                           appendChild par (Just symbolsPane)
                            Just wrapper <- getParentElement o
                            setAttribute i "enterKeyHint" "go"
                            translate <- newListener $ tryTrans w parser checker tests wrapper ref fs
                            if "nocheck" `elem` optlist 
                                then return ()
-                               else addListener i keyUp translate False                  
+                               else addListener i keyUp translate False
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "translation was missing an option"
 activateChecker _ Nothing  = return ()
@@ -135,7 +143,9 @@ tryTrans :: Eq (FixLang lex sem) =>
 tryTrans w parser equiv tests wrapper ref fs = onEnter $ 
                 do Just t <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
                    Just ival  <- getValue t
-                   case parse (spaces *> parser <* eof) "" ival of
+                   let transformedInput = kooSLNotation ival  -- Apply kooSLNotation here
+                   setValue t (Just transformedInput)  -- Update the input box with the transformed input
+                   case parse (spaces *> parser <* eof) "" transformedInput of
                          Right f -> liftIO $ case tests f of
                                                   Nothing -> checkForm f
                                                   Just msg -> writeIORef ref False >> message ("Looks like " ++ msg ++ ".")
@@ -154,16 +164,15 @@ tryTrans w parser equiv tests wrapper ref fs = onEnter $
 tryTrans_wrap w parser equiv tests wrapper ref fs =
                 do
                    elts <- getListOfElementsByTag wrapper "input"
-                --    elts <- case maybeElts of
-                --             Just xs -> return xs
-                --             Nothing -> Prelude.error "Failed to get list of elements"
                    i <- case elts of
                             (x:_) -> case x of
                                 Just element -> return element
                                 Nothing      -> Prelude.error "Empty element in the list"
                             _     -> Prelude.error "Empty list of elements"
                    Just ival  <- getValue (castToHTMLInputElement i)
-                   case parse (spaces *> parser <* eof) "" ival of
+                   let transformedInput = kooSLNotation ival  -- Apply kooSLNotation here
+                   setValue (castToHTMLInputElement i) (Just transformedInput)  -- Update the input box with the transformed input
+                   case parse (spaces *> parser <* eof) "" transformedInput of
                          Right f -> liftIO $ case tests f of
                                                   Nothing -> checkForm f
                                                   Just msg -> writeIORef ref False >> message ("Looks like " ++ msg ++ ".")
