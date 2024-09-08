@@ -1,14 +1,14 @@
 # Values formatted like "_env:ENV_VAR_NAME:default_value" can be overridden by the specified environment variable.
 # See https://github.com/yesodweb/yesod/wiki/Configuration#overriding-configuration-values-with-environment-variables
 
-static-dir:     "_env:STATIC_DIR:static"
-host:           "_env:HOST:*4" # any IPv4 host
-port:           "_env:PORT:3000" # NB: The port `yesod devel` uses is distinct from this value. Set the `yesod devel` port from the command line.
+static-dir: "_env:STATIC_DIR:static"
+host: "_env:HOST:*4" # any IPv4 host
+port: "_env:PORT:3000" # NB: The port `yesod devel` uses is distinct from this value. Set the `yesod devel` port from the command line.
 ip-from-header: "_env:IP_FROM_HEADER:false"
 
 # App root, including protocol. Set this to the domain and protocol of your site, for example "https://carnap.io".
 # You *must* set this when running your server in production, in order for links on the site to be constructed properly among other things.
-approot:        "_env:APPROOT:http://localhost:3000"
+approot: "_env:APPROOT:http://localhost:3000"
 
 #Optional value for serving static files from a separate subdomain; useful for serving static files from a CDN.
 #static-root:    "_env:STATICROOT:https://static.carnap.io/static"
@@ -26,13 +26,13 @@ approot:        "_env:APPROOT:http://localhost:3000"
 # See https://github.com/yesodweb/yesod/wiki/Configuration#parsing-numeric-values-as-strings
 
 database:
-  user:     "_env:PGUSER:carnap"
-  password: "_env:PGPASS:Carnap-Server"
-  host:     "_env:PGHOST:localhost"
-  port:     "_env:PGPORT:5432"
-  # See config/test-settings.yml for an override during tests
-  database: "_env:PGDATABASE:carnapdb"
-  poolsize: "_env:PGPOOLSIZE:10"
+    user: "_env:PGUSER:carnap"
+    password: "_env:PGPASS:Carnap-Server"
+    host: "_env:PGHOST:localhost"
+    port: "_env:PGPORT:5432"
+    # See config/test-settings.yml for an override during tests
+    database: "_env:PGDATABASE:carnapdb"
+    poolsize: "_env:PGPOOLSIZE:10"
 
 copyright: Copyright 2015-2022 G. Leach-Krouse <gleachkr@ksu.edu> and J. Ehrlich
 

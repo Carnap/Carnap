@@ -28,6 +28,7 @@ import GHCJS.DOM.Element
 --version---but it's the other way around in the FFI version. This appears
 --to be cleaner in 3.0, but there's no documentation for that at all, yet.
 import GHCJS.DOM.Types
+-- import GHCJS.Types (JSString, ToJSString(..))
 import GHCJS.DOM.HTMLInputElement (HTMLInputElement, getValue, setValue)
 import GHCJS.DOM.Document (Document,createElement, getBody, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, getParentElement, insertBefore)
@@ -62,7 +63,6 @@ tryMatch o ref w sf opts = onEnter $
                                [] -> shorten x xs stage
                                children -> updateGoal x (zip children [(stage + 1)..]) xs (stage + length children + 1)
                        else do message $ "Sorry, that's not the main connective. Try again!"
-                               resetGoal
                    Left e -> case children (fst x) of
                           [] -> shorten x xs stage
                           _ -> message "what you've entered doesn't appear to be a connective"
@@ -87,9 +87,6 @@ tryMatch o ref w sf opts = onEnter $
                                                                 setAttribute wrap2 "class" "success"
                                                                 modifyIORef ref (_2 .~ []) 
                                               _  -> updateGoal x [] xs stage
-              resetGoal = do (f,_,_,_) <- liftIO $ readIORef ref
-                             liftIO $ writeIORef ref (f, [(f,0)], T.Node (f,0) [],0)
-                             setInnerHTML o (Just $ sf f)
               dev x xs = adjustFirstMatching leaves (== T.Node x []) (dev' xs)
               dev' xs (T.Node x _) = T.Node x (map nodify xs)
               nodify x = T.Node x []
@@ -158,29 +155,43 @@ activateChecker w (Just (i,o,opts)) =
                          addListener i keyUp match False
                          resetButton <- questionButton w "Reset"
                          appendChild bw (Just resetButton)
-                         resetGoal <- newListener $ resetGoalWrapper tree ref sf
+                         resetGoal <- newListener $ resetGoalWrapper i tree ref sf
                          addListener resetButton click resetGoal False
+
+                         bw2 <- createButtonWrapperConst w o
+                         let createSymbolBtn symbol = createSymbolButton w bw2 symbol (insertSymbolClick i symbol)
+                         mapM createSymbolBtn ["~", "→", "↔", "∧", "∨"]
+                         symbolsPane <- createSymbolsPane w i
+                         appendChild symbolsPane (Just bw2)
+
+                         showSymbolsBtn <- getShowSymbolsButton w symbolsPane 
+                         appendChild bw (Just showSymbolsBtn)
+                         appendChild par (Just symbolsPane)
+                         return ()
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "syntax check was missing an option"
 activateChecker _ Nothing  = return ()
 
 
 resetGoalWrapper :: Element
+                    -> Element
                     -> IORef (PureForm, [(PureForm, Int)], Tree (PureForm, Int), Int)
                     -> (PureForm -> String)
                     -> EventM Element MouseEvent ()
-resetGoalWrapper o ref sf = liftIO $ do
-    resetFn o ref sf
+resetGoalWrapper i o ref sf = liftIO $ do
+    Just problemDiv <- getParentElement i
+    resetFn problemDiv o ref sf
 
 resetFn :: Element
+                 -> Element
                  -> IORef (PureForm, [(PureForm, Int)], Tree (PureForm, Int), Int)
                  -> (PureForm -> String)
                  -> IO ()
-resetFn o ref sf = do
+resetFn parentDiv o ref sf = do
     (f, _, _, _) <- liftIO $ readIORef ref
     liftIO $ writeIORef ref (f, [(f, 0)], T.Node (f, 0) [], 0)
     liftIO $ setInnerHTML o (Just $ sf f)
-
+    removeClassFromElement parentDiv "success"
 
 submitSyn :: IsEvent e => Document -> M.Map String String -> IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> String -> EventM HTMLInputElement e ()
 submitSyn w opts ref l = do (f,forms,_,_) <- liftIO $ readIORef ref

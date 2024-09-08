@@ -76,8 +76,8 @@ div:has(> div.exercise) {
     background: #D6DCE0;
     border:1px solid #D6DCE0;
     color:black;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
 }
 
 .symbolsPane {

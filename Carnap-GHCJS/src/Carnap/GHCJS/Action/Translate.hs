@@ -97,12 +97,12 @@ activateTranslate w (Just (i,o,opts)) = do
                                let transformedInput = kooSLNotation ival
                                setValue (castToHTMLInputElement i) (Just transformedInput)
                                liftIO $ btStatus Edited
-                            -- ... (rest of the setup remains the same)
+
                            bw2 <- createButtonWrapperConst w o
                            let createSymbolBtn symbol = createSymbolButton w bw2 symbol (insertSymbolClick i symbol)
                            case (M.lookup "transtype" opts) of
-                                 (Just "prop") -> mapM createSymbolBtn ["→", "↔", "∧", "∨"]
-                                 _ -> mapM createSymbolBtn ["→", "↔", "∧", "∨", "∀", "∃", "≠"]
+                                 (Just "prop") -> mapM createSymbolBtn ["~", "→", "↔", "∧", "∨"]
+                                 _ -> mapM createSymbolBtn ["~", "→", "↔", "∧", "∨", "∀", "∃", "≠"]
                            symbolsPane <- createSymbolsPane w i
                             -- Get Show Symbols button
                            showSymbolsBtn <- getShowSymbolsButton w symbolsPane     
@@ -112,7 +112,12 @@ activateTranslate w (Just (i,o,opts)) = do
                            appendChild bw (Just resetButton)
                            resetIt <- newListener $ resetAnswer i o opts
                            addListener resetButton click resetIt False
-                           
+
+                           checkButton <- questionButton w "Check"
+                           appendChild bw (Just checkButton)
+                           checkIt <- newListener $ liftIO $ tryTrans_wrap w parser checker tests i ref fs
+                           addListener checkButton click checkIt False
+
                            -- Initally set input box to empty
                            setValue (castToHTMLInputElement i) (Just "")
                            
@@ -121,20 +126,22 @@ activateTranslate w (Just (i,o,opts)) = do
                            mpar@(Just par) <- getParentNode o               
                            insertBefore par (Just bw) (Just o)
                            appendChild bw (Just showSymbolsBtn)
-                        --    insertBefore par (Just symbolsPane) (Just o)
                            appendChild par (Just symbolsPane)
                            Just wrapper <- getParentElement o
-                           setAttribute i "enterKeyHint" "go"
-                           translate <- newListener $ tryTrans w parser checker tests wrapper ref fs
-                           if "nocheck" `elem` optlist 
-                               then return ()
-                               else addListener i keyUp translate False
+                           return ()
+                        --    setAttribute i "enterKeyHint" "go"
+                        --    translate <- newListener $ tryTrans w parser checker tests wrapper ref fs
+                        --    if "nocheck" `elem` optlist 
+                        --        then return ()
+                        --        else addListener i keyUp translate False
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "translation was missing an option"
 activateChecker _ Nothing  = return ()
 
 resetAnswer :: Element -> Element -> M.Map String String -> EventM Element MouseEvent ()
 resetAnswer inputElem outputElem opts = liftIO $ do
+    Just parentDiv <- getParentElement inputElem
+    removeClassFromElement parentDiv "success"
     setValue (castToHTMLInputElement inputElem) (Just "")
 
 tryTrans :: Eq (FixLang lex sem) => 
@@ -161,32 +168,32 @@ tryTrans w parser equiv tests wrapper ref fs = onEnter $
                              writeIORef ref False 
                              setFailure w wrapper
 
-tryTrans_wrap w parser equiv tests wrapper ref fs =
-                do
-                   elts <- getListOfElementsByTag wrapper "input"
-                   i <- case elts of
-                            (x:_) -> case x of
-                                Just element -> return element
-                                Nothing      -> Prelude.error "Empty element in the list"
-                            _     -> Prelude.error "Empty list of elements"
-                   Just ival  <- getValue (castToHTMLInputElement i)
-                   let transformedInput = kooSLNotation ival  -- Apply kooSLNotation here
-                   setValue (castToHTMLInputElement i) (Just transformedInput)  -- Update the input box with the transformed input
-                   case parse (spaces *> parser <* eof) "" transformedInput of
-                         Right f -> liftIO $ case tests f of
-                                                  Nothing -> checkForm f
-                                                  Just msg -> writeIORef ref False >> message ("Looks like " ++ msg ++ ".")
-                         Left e -> message "Sorry, try again---that formula isn't grammatical."
-   where checkForm f' 
-            | f' `elem` fs = do message "Perfect match!"
-                                writeIORef ref True
-                                setSuccess w wrapper
-            | any (\f -> f' `equiv` f) fs = do message "Correct!"
-                                               writeIORef ref True
-                                               setSuccess w wrapper
-            | otherwise = do message "Not quite. Try again?"
-                             writeIORef ref False 
-                             setFailure w wrapper
+tryTrans_wrap :: Eq (FixLang lex sem) => 
+    Document -> Parsec String () (FixLang lex sem) -> BinaryTest lex sem -> UnaryTest lex sem
+    -> Element -> IORef Bool -> [FixLang lex sem] -> IO ()
+tryTrans_wrap w parser equiv tests inputElement ref fs = do
+    Just ival <- getValue (castToHTMLInputElement inputElement)
+    let transformedInput = kooSLNotation ival
+    setValue (castToHTMLInputElement inputElement) (Just transformedInput)
+    case parse (spaces *> parser <* eof) "" transformedInput of
+        Right f -> case tests f of
+            Nothing -> checkForm f
+            Just msg -> writeIORef ref False >> message ("Looks like " ++ msg ++ ".")
+        Left e -> message "Sorry, try again---that formula isn't grammatical."
+    where
+        checkForm f'
+            | f' `elem` fs = do 
+                message "Perfect match! (Answer has not been submitted)"
+                writeIORef ref True
+                setSuccess w inputElement
+            | any (\f -> f' `equiv` f) fs = do 
+                message "Correct! (Answer has not been submitted)"
+                writeIORef ref True
+                setSuccess w inputElement
+            | otherwise = do 
+                message "Not quite. Try again?"
+                writeIORef ref False
+                setFailure w inputElement
 
 submitTrans w opts i ref fs parser checker tests l =
         do isFinished <- liftIO $ readIORef ref
@@ -205,8 +212,7 @@ submitTrans w opts i ref fs parser checker tests l =
                             trySubmit w Translation opts l (TranslationDataOpts (serialize fs) (pack v) (M.toList opts)) False
                         _ -> message "Something is wrong... try again?"
                 else do
-                    Just wrapper <- getParentElement i
-                    liftIO $ tryTrans_wrap w parser checker tests wrapper ref fs
+                    liftIO $ tryTrans_wrap w parser checker tests i ref fs
     where serialize :: Show a => [a] -> Text
           serialize = pack . tail . init . show --we drop the list brackets
 
