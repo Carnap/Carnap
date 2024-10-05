@@ -115,6 +115,32 @@ eigenConstraint c suc ant sub
                      => Prism' (ClassicalSequentOver lex (Term Int)) (Int, Arity (Term Int) (Term Int) (Term Int))
           _sfuncIdx' = _sfuncIdx
 
+zweiConstraint :: 
+    ( PrismStandardVar (ClassicalSequentLexOver lex) Int
+    , PrismIndexedConstant (ClassicalSequentLexOver lex) Int
+    , PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) Int Int
+    , Schematizable (lex (ClassicalSequentOver lex))
+    , FirstOrderLex (lex (ClassicalSequentOver lex))
+    , CopulaSchema (ClassicalSequentOver lex)
+    , PrismSubstitutionalVariable (ClassicalSequentLexOver lex)
+    ) => ClassicalSequentOver lex (Term Int) 
+         -> ClassicalSequentOver lex (Succedent (Form Bool)) 
+         -> ClassicalSequentOver lex (Antecedent (Form Bool)) 
+         -> [Equation (ClassicalSequentOver lex)]
+         -> Maybe String
+zweiConstraint c suc ant sub
+    | (applySub sub c) `occurs` (applySub sub ant) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh. "
+                                                            ++ "Check the dependencies of this inference for occurances of " ++ show (applySub sub c) ++ "."
+    | (applySub sub c) `occurs` (applySub sub suc) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh. "
+                                                            ++ "Check the dependencies of this inference for occurances of " ++ show (applySub sub c) ++ "."
+    | otherwise = case (applySub sub c) of 
+                          _ | not . null $ preview _sfuncIdx' (applySub sub c) -> Nothing
+                            | not . null $ preview _varLabel (applySub sub c) -> Nothing
+                          _ -> Just $ "The term " ++ show (pureBNF $ applySub sub c) ++ " is not a constant or variable"
+    where _sfuncIdx' :: PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) Int Int 
+                     => Prism' (ClassicalSequentOver lex (Term Int)) (Int, Arity (Term Int) (Term Int) (Term Int))
+          _sfuncIdx' = _sfuncIdx
+
 tautologicalConstraint prems conc sub = case prems' of
                  []         | isValid (propForm conc') -> Nothing 
                  (p':ps')   | isValid (propForm $ foldr (./\.) p' ps' .=>. conc') -> Nothing

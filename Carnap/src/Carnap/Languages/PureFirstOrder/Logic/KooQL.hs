@@ -98,12 +98,15 @@ instance Inference KooQL PureLexiconFOL (Form Bool) where
      conclusionOf x   = lowerSequent (ruleOf x)
 
      restriction (PR prems) = Just (premConstraint prems)
-     restriction _          = Nothing
      
+     restriction UD = Just (zweiConstraint tau (SS (lall "v" $ phi' 1)) (fogamma 1))
+     restriction EI = Just (zweiConstraint tau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
+     restriction _          = Nothing
+
      globalRestriction (Left ded) n UD = Just (montagueNewUniversalConstraint [tau] ded n)
      globalRestriction (Left ded) n EI = Just (montagueNewExistentialConstraint [tau] ded n)
      globalRestriction _ _ _ = Nothing
-
+     
      indirectInference (SL x) = indirectInference x
      indirectInference UD  = Just PolyProof
      indirectInference _ = Nothing
