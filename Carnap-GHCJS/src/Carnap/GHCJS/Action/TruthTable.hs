@@ -225,7 +225,7 @@ tryCounterexample w opts ref i indicies counterexampleData =
            case mrow of 
                Nothing -> return ()
                Just s -> 
-                   case checkLength =<< (clean $ map charToTruthValue s) of
+                   case checkLength =<< (clean $ map (charToTruthValue opts) s) of
                      Nothing -> alert w' "not a readable row"
                      Just l -> do let v = listToVal l
                                   let s = counterexampleTest counterexampleData v
@@ -553,7 +553,7 @@ sortIdx (x:xs) = smaller ++ [x] ++ bigger
 sortIdx [] = []
 
 packText :: String -> [Maybe Bool]
-packText s = if valid then map charToTruthValue . filter (/= ' ') $ s else []
+packText s = if valid then map (charToTruthValue mempty) . filter (/= ' ') $ s else []
     where valid = all (`elem` ['T','F','-',' ']) s
 
 expandRow :: [Either Char b] -> [Maybe Bool] ->  [Maybe Bool]
@@ -599,12 +599,14 @@ rewriteThs opts ths = do s <- map deMaybe <$> mapM getInnerHTML ths
     where deMaybe (Just c) = c
           deMaybe Nothing = " "
 
-charToTruthValue :: Char -> Maybe Bool
-charToTruthValue 'T' = Just True
-charToTruthValue '✓' = Just True
-charToTruthValue 'F' = Just False
-charToTruthValue '✗' = Just False
-charToTruthValue _   = Nothing 
+charToTruthValue :: Map String String -> Char -> Maybe Bool
+charToTruthValue opts '✓' = Just True
+charToTruthValue opts '✗' = Just False
+charToTruthValue opts 'T' = Just True
+charToTruthValue opts 'F' = Just False
+charToTruthValue opts c | [c] == trueMark opts = Just True
+charToTruthValue opts c | [c] == falseMark opts = Just False
+charToTruthValue opts _   = Nothing 
 
 trueMark opts = case M.lookup "truemark" opts of 
                     Just [c] -> [c]
