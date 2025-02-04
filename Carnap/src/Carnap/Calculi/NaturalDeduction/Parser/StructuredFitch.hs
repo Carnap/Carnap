@@ -44,7 +44,7 @@ toProofTreeStructuredFitch t n = case t .! n of
                       subproofProcess (ProofType assumptionNumber conclusionNumber) deps = 
                         case filter (\(x,y) -> x /= y) deps of
                             [thesp@(first,last)] -> case range first last t of
-                                Just (SubProof _ ls) | (last - first) < (assumptionNumber + conclusionNumber) -> err "this subproof doesn't have enough lines to apply this rule"
+                                Just (SubProof _ ls) | (last - first + 1) < (assumptionNumber + conclusionNumber) -> err "this subproof doesn't have enough lines to apply this rule"
                                                      | let firstlines :: Inference r lex sem => DeductionTree r lex sem -> [Maybe (DeductionLine r lex sem)]
                                                            firstlines z =  map (\x -> z .! x) (take assumptionNumber [first ..]) 
                                                            badLine (Just l) = not $ isAssumptionLine l
