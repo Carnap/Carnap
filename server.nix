@@ -66,7 +66,7 @@ newpkgs: oldpkgs: {
         rm -f static/truth-tree/lib.{css,js}.map
 
         echo ":: Adding a universal settings file"
-        cp config/settings-example.yml config/settings.yml
+        cp -n config/settings-example.yml config/settings.yml
         cp -r {config,static} $out/share
         cat config/settings.yml
         '';
