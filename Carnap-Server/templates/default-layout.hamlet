@@ -13,10 +13,10 @@
                             <a href=@{CourseAssignmentR (courseTitle course) (documentFilename doc)}>
                                 _{MsgLayoutBook}
                         $nothing
-                            <a href=@{BookR}>
+                            <a href=@{bookRoute}>
                                 _{MsgLayoutBook}
                     $nothing
-                        <a href=@{BookR}>_{MsgLayoutBook}
+                        <a href=@{bookRoute}>_{MsgLayoutBook}
                 $maybe (Entity _ user) <- authmaybe
                     <li.dropdown>
                             $maybe Entity _ userdata <- mud
