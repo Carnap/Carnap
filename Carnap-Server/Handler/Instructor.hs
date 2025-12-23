@@ -20,7 +20,7 @@ import           Util.Data
 import           Util.Database
 import           Util.Grades
 import           Util.Handler
-import           Util.LTI
+import           Util.LTIGrades
 import           Yesod.Form.Bootstrap3
 import           Yesod.Form.Jquery
 
@@ -63,36 +63,41 @@ putInstructorR ident = do
                                      , AssignmentMetadataDescription =. unTextarea <$> instructorAssignUpdateDescription theUpdate
                                      ]
                  returnJson ("updated!"::Text)
-            (_,FormSuccess (UpdateCourse idstring mdesc mstart mend mpoints mopen mtext mLtiId),_,_,_) -> do
-                 cid <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text))
-                        return . readMaybe . T.unpack $ idstring
-                 checkCourseOwnership ident cid
-                 runDB $ do course <- get cid >>= maybe (sendStatusJSON badRequest400 ("could not find course" :: Text)) pure
-                            let Just tz = tzByName . courseTimeZone $ course
-                                unlocalize day = localTimeToUTCTZ tz (LocalTime day (TimeOfDay 23 59 59))
-                            mnewLtiId <- case mLtiId of
-                                             Nothing -> pure Nothing
-                                             Just id -> maybe (sendStatusJSON badRequest400 ("could not read LTI key" :: Text)) pure 
-                                                        $ A.decode (fromStrict . encodeUtf8 $ id)
-                            update cid [ CourseDescription =. (unTextarea <$> mdesc) ]
-                            update cid [ CourseTextBook =. mtext]
-                            maybeDo mstart (\start -> update cid
-                              [ CourseStartDate =. unlocalize start])
-                            maybeDo mend (\end-> update cid
-                              [ CourseEndDate =. unlocalize end])
-                            maybeDo mpoints (\points-> update cid
-                              [ CourseTotalPoints =. points ])
-                            maybeDo mopen (\open -> update cid
-                              [ CourseEnrollmentOpen =. open])
-                            let autoregKey = CourseAutoregKey cid
-                            -- if the autoreg form field is cleared, we delete the course's auto
-                            -- registration record. otherwise update/add it
-                            maybe (delete autoregKey)
-                                (\(AutoregTriple lab iss did k) ->
-                                    repsert autoregKey $ CourseAutoreg lab iss did k cid)
-                                mnewLtiId
+(_,FormSuccess (UpdateCourse idstring mdesc mstart mend mpoints mopen mtext mLtiId mGradeSync),_,_,_) -> do
+                  cid <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text))
+                         return . readMaybe . T.unpack $ idstring
+                  checkCourseOwnership ident cid
+                  runDB $ do course <- get cid >>= maybe (sendStatusJSON badRequest400 ("could not find course" :: Text)) pure
+                             let Just tz = tzByName . courseTimeZone $ course
+                                 unlocalize day = localTimeToUTCTZ tz (LocalTime day (TimeOfDay 23 59 59))
+                             mnewLtiId <- case mLtiId of
+                                              Nothing -> pure Nothing
+                                              Just id -> maybe (sendStatusJSON badRequest400 ("could not read LTI key" :: Text)) pure 
+                                                         $ A.decode (fromStrict . encodeUtf8 $ id)
+                             update cid [ CourseDescription =. (unTextarea <$> mdesc) ]
+                             update cid [ CourseTextBook =. mtext]
+                             maybeDo mstart (\start -> update cid
+                               [ CourseStartDate =. unlocalize start])
+                             maybeDo mend (\end-> update cid
+                               [ CourseEndDate =. unlocalize end])
+                             maybeDo mpoints (\points-> update cid
+                               [ CourseTotalPoints =. points ])
+                             maybeDo mopen (\open -> update cid
+                               [ CourseEnrollmentOpen =. open])
+                             let autoregKey = CourseAutoregKey cid
+                             -- if the autoreg form field is cleared, we delete the course's auto
+                             -- registration record. otherwise update/add it
+                             maybe (delete autoregKey)
+                                 (\(AutoregTriple lab iss did k) ->
+                                     repsert autoregKey $ CourseAutoreg lab iss did k cid)
+                                 mnewLtiId
+                             -- Handle grade sync setting
+                             case mGradeSync of
+                                 Just True -> enableCourseGradeSync cid
+                                 Just False -> disableCourseGradeSync cid
+                                 Nothing -> return ()
 
-                 returnJson ("updated!"::Text)
+                  returnJson ("updated!"::Text)
             (_,_,FormSuccess (idstring, mscope, mdesc,mfile,mtags),_,_) -> do
                  k <- maybe (sendStatusJSON badRequest400 ("Could not read document key" :: Text)) return $ readMaybe idstring
                  doc <- runDB (get k) >>= maybe (sendStatusJSON notFound404 ("Could not find document" :: Text)) pure
@@ -424,6 +429,14 @@ postInstructorQueryR ident = do
                                     , dateDisplay (assignmentAccessTokenCreatedAt tok) course
                                     , DeleteToken k)) toks
             returnJson deletions
+        QueryGradeSyncStatus cid -> do
+            checkCourseOwnership ident cid
+            status <- isGradeSyncEnabled cid
+            returnJson status
+        SyncGrades cid aid -> do
+            checkCourseOwnership ident cid
+            (successful, failed) <- syncAllGradesForCourse cid aid
+            returnJson ("Synced " <> tshow successful <> " grades, " <> tshow failed <> " failed" :: Text)
 
 getInstructorR :: Text -> Handler Html
 getInstructorR ident = do
@@ -518,6 +531,8 @@ data InstructorQuery = QueryGrade UserId CourseId
                      | QueryAccommodation UserId CourseId
                      | QueryTokens UserId CourseId
                      | QueryAPIKey UserId
+                     | QueryGradeSyncStatus CourseId
+                     | SyncGrades CourseId AssignmentMetadataId
     deriving Generic
 
 instance ToJSON InstructorQuery
@@ -899,6 +914,7 @@ data UpdateCourse
       , ucEnrolOpen :: Maybe Bool
       , ucTextbook  :: Maybe (Key AssignmentMetadata)
       , ucLtiId     :: Maybe Text
+      , ucGradeSync :: Maybe Bool
       }
 
 updateCourseForm
@@ -913,6 +929,7 @@ updateCourseForm mcourseent mautoreg asmd = renderBootstrap3 BootstrapBasicForm 
             <*> aopt checkBoxField checkFieldSettings (maybe (Just Nothing) (Just . Just) mopen)
             <*> aopt (selectField assignmentlist) textbookFieldSettings (maybe Nothing (Just . Just) mtext)
             <*> aopt textField (bfs ("LTI Autoregistration ID" :: Text)) (Just mautoregId)
+            <*> aopt checkBoxField gradeSyncFieldSettings (Just (Just mgradeSync))
     where courseId = hiddenField
           mcourse = entityVal <$> mcourseent
           mtext = mcourse >>= courseTextBook
@@ -924,6 +941,7 @@ updateCourseForm mcourseent mautoreg asmd = renderBootstrap3 BootstrapBasicForm 
           mcid = T.pack . show . entityKey <$> mcourseent
           mopen = courseEnrollmentOpen <$> mcourse
           mautoregId = toStrict . decodeUtf8 . A.encode <$> (tripleFromDB <$> mautoreg)
+          mgradeSync = maybe False (const True) mcourseent -- Default to false for now
           localize t = (Just . localDay) <$> (utcToLocalTimeTZ <$> mzone <*> t)
           assignmentlist = pure $ OptionList assignments (readMaybe . unpack)
           assignments = map toAssignmentOption asmd
@@ -943,6 +961,13 @@ updateCourseForm mcourseent mautoreg asmd = renderBootstrap3 BootstrapBasicForm 
             , fsId = Nothing
             , fsName = Nothing
             , fsAttrs = maybe [("style","display:none")] (const [("style","margin-left:10px")]) mcourse
+            }
+          gradeSyncFieldSettings = FieldSettings
+            { fsLabel = "Enable LTI Grade Sync"
+            , fsTooltip = Just "Automatically sync grades with the LMS via LTI"
+            , fsId = Nothing
+            , fsName = Nothing
+            , fsAttrs = [("style","margin-left:10px")]
             }
 
 setUserAliasForm :: Maybe Text -> Markup -> MForm (HandlerFor App) (FormResult (Maybe Text), WidgetFor App ())
