@@ -409,6 +409,10 @@ instance YesodAuthLTI13 App where
 instance YesodAuth App where
     type AuthId App = UserId
 
+    -- The default is http-client-tls's global manager, which bypasses the
+    -- User-Agent injection configured on appHttpManager in Application.hs.
+    authHttpManager = getsYesod appHttpManager
+
     -- Where to send a user after successful login
     loginDest _ = UserDispatchR
 

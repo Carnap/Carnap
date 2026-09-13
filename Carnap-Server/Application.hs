@@ -82,9 +82,21 @@ mkYesodDispatch "App" resourcesApp
 -- migrations handled by Yesod.
 makeFoundation :: AppSettings -> IO App
 makeFoundation appSettings = do
+    -- stdout is a pipe under systemd; setting buffering is useful when you
+    -- need to add diagnostic putStrLn output to the HTTP manager below.
+    hSetBuffering stdout LineBuffering
     -- Some basic initializations: HTTP connection manager, logger, and static
     -- subsite.
-    appHttpManager <- newManager
+    appHttpManager <- newManagerSettings defaultManagerSettings
+        { managerModifyRequest = \req -> do
+            let req' = if any ((== hUserAgent) . fst) (requestHeaders req)
+                    then req
+                    else req { requestHeaders =
+                                 (hUserAgent, "Carnap") : requestHeaders req }
+                                 -- canvas now requires a UA header
+            return req'
+        , managerModifyResponse = \res -> do return res
+        }
     appLogger <- newStdoutLoggerSet defaultBufSize >>= makeYesodLogger
     appStatic <-
         (if appMutableStatic appSettings then staticDevel else static)
