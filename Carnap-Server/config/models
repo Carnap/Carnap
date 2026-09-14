@@ -218,3 +218,11 @@ Course
     deriving Eq
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)
+
+-- Grade Sync Status for LTI Integration
+GradeSyncStatus
+    course CourseId
+    enabled Bool default=false
+    lastError Text Maybe
+    Primary course
+    deriving Show
