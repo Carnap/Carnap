@@ -102,13 +102,18 @@ returnAssignment coursetitle filename (Entity key val) path = do
                              mbcss <- retrievePandocVal (lookupMeta "base-css" meta)
                              mcss <- retrievePandocVal (lookupMeta "css" meta)
                              mjs <- retrievePandocVal (lookupMeta "js" meta)
+                             mtitle <- retrievePandocVal (lookupMeta "title" meta)
                              let source = "assignment:" ++ show key
+                                 pageTitle = case mtitle of
+                                    Just ts@(_:_) -> intercalate " " ts
+                                    _ -> filename
                                  theLayout = \widget -> case mbcss of
                                     Nothing -> defaultLayout $ do mapM_ addStylesheet [StaticR css_bootstrapextra_css]
                                                                   widget
                                     Just bcss -> cleanLayout $ do mapM_ addStylesheetRemote bcss
                                                                   widget
                              theLayout $ do
+                                 setTitle $ toHtml pageTitle
                                  toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
                                  toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/status-warning.julius")
                                  toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/assignment-state.julius")

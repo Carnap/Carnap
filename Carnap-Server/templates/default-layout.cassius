@@ -54,7 +54,7 @@ nav#navbar
         display:block
 
 footer
-    color:#999
+    color:#444
     padding-bottom:20px
 
 div#message
@@ -72,4 +72,10 @@ div#message code, .wrapped
 
 a#opentower
     font-family:street;
-    color:gray;
+    color:#222;
+
+/* Override Bootstrap link color for better contrast (WCAG AA) */
+a
+    color:#0266bc
+a:hover, a:focus
+    color:#014c8c

@@ -10,6 +10,6 @@ makeAnchors (Header level meta@(identifier, _classes, _kvps) inlines)
             | not . null $ identifier =
     Header level meta inlines'
     where
-        link = Link ("", ["anchor":: Text], [("aria-hidden", "true")]) [] ("#" <> identifier, "heading anchor link")
+        link = Link ("", ["anchor":: Text], [("aria-hidden", "true"), ("tabindex", "-1")]) [] ("#" <> identifier, "heading anchor link")
         inlines' = link:inlines
 makeAnchors x = x
